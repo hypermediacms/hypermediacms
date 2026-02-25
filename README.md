@@ -1,16 +1,13 @@
-## Hi there 👋
+# HypermediaCMS
 
-<!--
-**hypermediacms/hypermediacms** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+HypermediaCMS is a **server-driven, hypermedia-first CMS** built around an XML-like domain-specific language called **HTX**. HTX defines content queries, templates, and storage actions with a declarative contract designed to be secure, testable, and versionable.
 
-Here are some ideas to get you started:
+Instead of relying on heavy client-side JavaScript stacks, you define buildless content queries, mutations, and response behavior in HTX templates. Those templates drive a secure two-phase workflow between the Rufinus runtime and Origen server, returning dynamic, hydrated HTML fragments ready for HTMX swaps.
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+## Why HypermediaCMS
+
+- **Hypermedia-first DX**: build UI behavior in compact HTX templates and render stateless HTML on demand.
+- **HTMX-native workflow**: return fully hydrated, HTMX-ready fragments from server-side contracts.
+- **Secure mutations**: declare actions in HTX, sign payloads in prepare phase, then validate and execute server-side.
+
+Learn more at [hypermediacms.org](https://hypermediacms.org)
