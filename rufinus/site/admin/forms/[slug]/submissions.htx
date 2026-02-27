@@ -78,7 +78,7 @@ async function deleteSubmission(id) {
   try {
     var headers = { 'Content-Type': 'application/json', 'X-API-Key': 'htx-starter-key-001', 'X-HTX-Version': '1' };
     // Phase 1: Prepare — get action token
-    var prepareRes = await fetch('/api/content/prepare', { method: 'POST', headers: headers, body: JSON.stringify({ action: 'delete', recordId: String(id), type: 'form_submission' }) });
+    var prepareRes = await fetch('/api/content/prepare', { method: 'POST', headers: headers, body: JSON.stringify({ meta: { action: 'delete', recordId: String(id), type: 'form_submission' }, responseTemplates: [] }) });
     if (!prepareRes.ok) { var errData = await prepareRes.json(); throw new Error(errData.error || 'Prepare failed'); }
     var prepareData = await prepareRes.json();
     var payloadStr = prepareData.data && prepareData.data.payload ? prepareData.data.payload : '{}';
