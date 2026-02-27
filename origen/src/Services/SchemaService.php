@@ -2,6 +2,7 @@
 
 namespace Origen\Services;
 
+use Origen\Storage\Database\Connection;
 use Origen\Storage\Database\ContentRepository;
 use Origen\Storage\Database\SchemaRepository;
 
@@ -10,6 +11,7 @@ class SchemaService
     public function __construct(
         private SchemaRepository $schemaRepo,
         private ContentRepository $contentRepo,
+        private Connection $connection,
     ) {}
 
     /**
@@ -150,5 +152,45 @@ class SchemaService
 
             $this->contentRepo->upsertFieldValue($contentId, $siteId, $fieldName, $fieldValue);
         }
+    }
+
+    /**
+     * Get the storage mode for a content type. Returns 'content' if no setting exists.
+     */
+    public function getStorageMode(int $siteId, string $contentType): string
+    {
+        $stmt = $this->connection->pdo()->prepare(
+            'SELECT storage_mode FROM content_type_settings WHERE site_id = ? AND content_type = ?'
+        );
+        $stmt->execute([$siteId, $contentType]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $row ? $row['storage_mode'] : 'content';
+    }
+
+    /**
+     * Save content type settings (storage mode, retention).
+     */
+    public function saveTypeSettings(int $siteId, string $contentType, string $mode, ?int $retentionDays = null): void
+    {
+        $stmt = $this->connection->pdo()->prepare(
+            'INSERT INTO content_type_settings (site_id, content_type, storage_mode, retention_days)
+             VALUES (?, ?, ?, ?)
+             ON CONFLICT(site_id, content_type)
+             DO UPDATE SET storage_mode = excluded.storage_mode, retention_days = excluded.retention_days'
+        );
+        $stmt->execute([$siteId, $contentType, $mode, $retentionDays]);
+    }
+
+    /**
+     * Get full content type settings row, or null if none.
+     */
+    public function getTypeSettings(int $siteId, string $contentType): ?array
+    {
+        $stmt = $this->connection->pdo()->prepare(
+            'SELECT * FROM content_type_settings WHERE site_id = ? AND content_type = ?'
+        );
+        $stmt->execute([$siteId, $contentType]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return $row ?: null;
     }
 }

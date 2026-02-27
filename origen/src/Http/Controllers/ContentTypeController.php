@@ -66,14 +66,32 @@ class ContentTypeController
         $type = $request->getAttribute('type');
         $site = $request->input('current_site');
         $fields = $this->schemaService->getSchemaForType($site, $type);
+        $typeSettings = $this->schemaService->getTypeSettings((int) $site['id'], $type);
+        $currentMode = $typeSettings['storage_mode'] ?? 'content';
+        $retentionDays = $typeSettings['retention_days'] ?? '';
 
         if ($request->header('hx-request')) {
             $html = '<h1>Edit Type: ' . $this->e(ucfirst($type)) . '</h1>'
                 . '<p class="text-muted text-sm" style="margin-bottom: 1.5rem;">Manage custom fields for the <strong>' . $this->e($type) . '</strong> content type.</p>'
                 . '<div class="admin-card">'
                 . '<form hx-post="/api/content-types" hx-target=".admin-main" hx-swap="innerHTML">'
-                . '<input type="hidden" name="content_type" value="' . $this->e($type) . '">'
-                . '<div id="fields-container">';
+                . '<input type="hidden" name="content_type" value="' . $this->e($type) . '">';
+
+            // Storage mode settings
+            $html .= '<div style="margin-bottom:1.5rem;padding:1rem;border:1px solid #e2e8f0;border-radius:6px;">'
+                . '<label style="font-weight:600;margin-bottom:0.5rem;display:block;">Storage Mode</label>'
+                . '<select name="storage_mode" onchange="document.getElementById(\'retention-row\').style.display=this.value===\'ephemeral\'?\'flex\':\'none\'" style="padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.9rem;margin-bottom:0.75rem;">';
+            foreach (['content' => 'Content (SQLite + Markdown)', 'data' => 'Data (SQLite only)', 'ephemeral' => 'Ephemeral (SQLite + auto-purge)'] as $val => $label) {
+                $sel = $val === $currentMode ? ' selected' : '';
+                $html .= '<option value="' . $val . '"' . $sel . '>' . $label . '</option>';
+            }
+            $html .= '</select>'
+                . '<div id="retention-row" style="display:' . ($currentMode === 'ephemeral' ? 'flex' : 'none') . ';align-items:center;gap:0.5rem;">'
+                . '<label>Retention days:</label>'
+                . '<input type="number" name="retention_days" value="' . $this->e((string) $retentionDays) . '" min="0" style="width:80px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.9rem;">'
+                . '</div></div>';
+
+            $html .= '<div id="fields-container">';
 
             foreach ($fields as $field) {
                 $required = !empty($field['constraints']['required']);
@@ -96,6 +114,8 @@ class ContentTypeController
         return Response::json([
             'type' => $type,
             'fields' => $fields,
+            'storage_mode' => $currentMode,
+            'retention_days' => $retentionDays,
         ]);
     }
 
@@ -145,6 +165,15 @@ class ContentTypeController
         }
 
         $this->writeThrough->saveSchema($site['slug'], (int) $site['id'], $contentType, $validFields);
+
+        // Save storage mode settings
+        $storageMode = $request->input('storage_mode', 'content');
+        if (!in_array($storageMode, ['content', 'data', 'ephemeral'], true)) {
+            $storageMode = 'content';
+        }
+        $retentionDays = $request->input('retention_days');
+        $retentionDays = ($storageMode === 'ephemeral' && is_numeric($retentionDays)) ? (int) $retentionDays : null;
+        $this->schemaService->saveTypeSettings((int) $site['id'], $contentType, $storageMode, $retentionDays);
 
         if ($request->header('hx-request')) {
             return $this->index($request);

@@ -85,6 +85,7 @@ class Bootstrap
         $container->singleton(SchemaService::class, fn($c) => new SchemaService(
             $c->make(SchemaRepository::class),
             $c->make(ContentRepository::class),
+            $c->make(Connection::class),
         ));
         $container->singleton(RelationshipResolver::class, fn($c) => new RelationshipResolver(
             $c->make(SchemaService::class),
@@ -107,6 +108,18 @@ class Bootstrap
         // Ensure super_admins have membership on every site
         $userRepo = $container->make(UserRepository::class);
         $userRepo->ensureSuperAdminMemberships($connection);
+
+        // Purge expired ephemeral content
+        $connection->pdo()->exec(
+            "DELETE FROM content WHERE id IN (
+                SELECT c.id FROM content c
+                JOIN content_type_settings cts
+                  ON c.site_id = cts.site_id AND c.type = cts.content_type
+                WHERE cts.storage_mode = 'ephemeral'
+                  AND cts.retention_days IS NOT NULL
+                  AND datetime(c.created_at, '+' || cts.retention_days || ' days') < datetime('now')
+            )"
+        );
 
         // Router + routes
         $router = new Router();
@@ -192,12 +205,25 @@ class Bootstrap
         $container->singleton(SchemaService::class, fn($c) => new SchemaService(
             $c->make(SchemaRepository::class),
             $c->make(ContentRepository::class),
+            $c->make(Connection::class),
         ));
         $container->singleton(ContentService::class, fn($c) => new ContentService(
             $c->make(WriteThrough::class),
             $c->make(SchemaService::class),
             $c->make(ContentRepository::class),
         ));
+
+        // Purge expired ephemeral content
+        $connection->pdo()->exec(
+            "DELETE FROM content WHERE id IN (
+                SELECT c.id FROM content c
+                JOIN content_type_settings cts
+                  ON c.site_id = cts.site_id AND c.type = cts.content_type
+                WHERE cts.storage_mode = 'ephemeral'
+                  AND cts.retention_days IS NOT NULL
+                  AND datetime(c.created_at, '+' || cts.retention_days || ' days') < datetime('now')
+            )"
+        );
 
         return $container;
     }

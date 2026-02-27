@@ -26,7 +26,7 @@ class SchemaServiceTest extends TestCase
 
         $this->schemaRepo = new SchemaRepository($this->connection);
         $contentRepo = new ContentRepository($this->connection);
-        $this->service = new SchemaService($this->schemaRepo, $contentRepo);
+        $this->service = new SchemaService($this->schemaRepo, $contentRepo, $this->connection);
     }
 
     public function test_save_and_get_schema(): void

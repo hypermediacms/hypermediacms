@@ -19,42 +19,44 @@ class WriteThrough
     ) {}
 
     /**
-     * Create content: SQLite insert → get ID → write .md → commit.
+     * Create content: SQLite insert → get ID → write .md (if content mode) → commit.
      */
-    public function createContent(string $siteSlug, int $siteId, array $data): array
+    public function createContent(string $siteSlug, int $siteId, array $data, string $storageMode = 'content'): array
     {
         $this->connection->beginTransaction();
         try {
             $record = $this->contentRepo->insert($siteId, $data);
 
-            // Build frontmatter meta
-            $meta = [
-                'id' => $record['id'],
-                'title' => $record['title'],
-                'slug' => $record['slug'],
-                'status' => $record['status'],
-                'created_at' => $record['created_at'],
-                'updated_at' => $record['updated_at'],
-            ];
+            if ($storageMode === 'content') {
+                // Build frontmatter meta
+                $meta = [
+                    'id' => $record['id'],
+                    'title' => $record['title'],
+                    'slug' => $record['slug'],
+                    'status' => $record['status'],
+                    'created_at' => $record['created_at'],
+                    'updated_at' => $record['updated_at'],
+                ];
 
-            // Include custom field values in frontmatter
-            if (!empty($data['field_values'])) {
-                foreach ($data['field_values'] as $name => $value) {
-                    $meta[$name] = $this->prepareFieldForFrontmatter($value);
+                // Include custom field values in frontmatter
+                if (!empty($data['field_values'])) {
+                    foreach ($data['field_values'] as $name => $value) {
+                        $meta[$name] = $this->prepareFieldForFrontmatter($value);
+                    }
                 }
+
+                $filePath = $this->contentFiles->write(
+                    $siteSlug,
+                    $record['type'],
+                    $record['slug'],
+                    $meta,
+                    $record['body'] ?? ''
+                );
+
+                // Update file_path in DB
+                $this->contentRepo->update($record['id'], ['file_path' => $filePath]);
+                $record['file_path'] = $filePath;
             }
-
-            $filePath = $this->contentFiles->write(
-                $siteSlug,
-                $record['type'],
-                $record['slug'],
-                $meta,
-                $record['body'] ?? ''
-            );
-
-            // Update file_path in DB
-            $this->contentRepo->update($record['id'], ['file_path' => $filePath]);
-            $record['file_path'] = $filePath;
 
             $this->connection->commit();
             return $record;
@@ -69,46 +71,48 @@ class WriteThrough
     }
 
     /**
-     * Update content: update SQLite → update .md → commit.
+     * Update content: update SQLite → update .md (if content mode) → commit.
      */
-    public function updateContent(string $siteSlug, int $siteId, array $existing, array $data): array
+    public function updateContent(string $siteSlug, int $siteId, array $existing, array $data, string $storageMode = 'content'): array
     {
         $this->connection->beginTransaction();
         try {
             $oldSlug = $existing['slug'];
             $record = $this->contentRepo->update($existing['id'], $data);
 
-            // If slug changed, rename the file
-            if (isset($data['slug']) && $data['slug'] !== $oldSlug) {
-                $this->contentFiles->rename($siteSlug, $record['type'], $oldSlug, $data['slug']);
+            if ($storageMode === 'content') {
+                // If slug changed, rename the file
+                if (isset($data['slug']) && $data['slug'] !== $oldSlug) {
+                    $this->contentFiles->rename($siteSlug, $record['type'], $oldSlug, $data['slug']);
+                }
+
+                // Build frontmatter
+                $meta = [
+                    'id' => $record['id'],
+                    'title' => $record['title'],
+                    'slug' => $record['slug'],
+                    'status' => $record['status'],
+                    'created_at' => $record['created_at'],
+                    'updated_at' => $record['updated_at'],
+                ];
+
+                // Include field values
+                $fieldValues = $this->contentRepo->getFieldValues($record['id']);
+                foreach ($fieldValues as $fv) {
+                    $meta[$fv['field_name']] = $this->prepareFieldForFrontmatter($fv['field_value']);
+                }
+
+                $filePath = $this->contentFiles->write(
+                    $siteSlug,
+                    $record['type'],
+                    $record['slug'],
+                    $meta,
+                    $record['body'] ?? ''
+                );
+
+                $this->contentRepo->update($record['id'], ['file_path' => $filePath]);
+                $record['file_path'] = $filePath;
             }
-
-            // Build frontmatter
-            $meta = [
-                'id' => $record['id'],
-                'title' => $record['title'],
-                'slug' => $record['slug'],
-                'status' => $record['status'],
-                'created_at' => $record['created_at'],
-                'updated_at' => $record['updated_at'],
-            ];
-
-            // Include field values
-            $fieldValues = $this->contentRepo->getFieldValues($record['id']);
-            foreach ($fieldValues as $fv) {
-                $meta[$fv['field_name']] = $this->prepareFieldForFrontmatter($fv['field_value']);
-            }
-
-            $filePath = $this->contentFiles->write(
-                $siteSlug,
-                $record['type'],
-                $record['slug'],
-                $meta,
-                $record['body'] ?? ''
-            );
-
-            $this->contentRepo->update($record['id'], ['file_path' => $filePath]);
-            $record['file_path'] = $filePath;
 
             $this->connection->commit();
             return $record;
@@ -119,14 +123,16 @@ class WriteThrough
     }
 
     /**
-     * Delete content: delete from SQLite → delete .md.
+     * Delete content: delete from SQLite → delete .md (if content mode).
      */
-    public function deleteContent(string $siteSlug, array $record): void
+    public function deleteContent(string $siteSlug, array $record, string $storageMode = 'content'): void
     {
         $this->connection->beginTransaction();
         try {
             $this->contentRepo->delete($record['id']);
-            $this->contentFiles->delete($siteSlug, $record['type'], $record['slug']);
+            if ($storageMode === 'content') {
+                $this->contentFiles->delete($siteSlug, $record['type'], $record['slug']);
+            }
             $this->connection->commit();
         } catch (\Throwable $e) {
             $this->connection->rollBack();

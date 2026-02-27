@@ -102,7 +102,8 @@ class ContentService
             $contentData['field_values'] = $customFields;
         }
 
-        $record = $this->writeThrough->createContent($siteSlug, $siteId, $contentData);
+        $storageMode = $this->schemaService->getStorageMode($siteId, $contentData['type']);
+        $record = $this->writeThrough->createContent($siteSlug, $siteId, $contentData, $storageMode);
 
         // Sync custom field values to SQLite
         if (!empty($customFields)) {
@@ -128,7 +129,8 @@ class ContentService
             $fillable['slug'] = $this->generateSlug($fillable['title'], $siteId, $existing['id']);
         }
 
-        $record = $this->writeThrough->updateContent($siteSlug, $siteId, $existing, $fillable);
+        $storageMode = $this->schemaService->getStorageMode($siteId, $existing['type']);
+        $record = $this->writeThrough->updateContent($siteSlug, $siteId, $existing, $fillable, $storageMode);
 
         // Sync custom field values (exclude htx-* and system fields)
         $reserved = ['type', 'slug', 'title', 'body', 'status', 'responseTemplates', 'htx-token', 'htx-context', 'htx-recordId'];
@@ -136,7 +138,7 @@ class ContentService
         if (!empty($customFields)) {
             $this->schemaService->syncFieldValues($record['id'], $siteId, $customFields);
             // Re-write the flat file with updated field values
-            $this->writeThrough->updateContent($siteSlug, $siteId, $record, []);
+            $this->writeThrough->updateContent($siteSlug, $siteId, $record, [], $storageMode);
         }
 
         return $record;
@@ -147,7 +149,8 @@ class ContentService
      */
     public function delete(array $existing, array $site): void
     {
-        $this->writeThrough->deleteContent($site['slug'], $existing);
+        $storageMode = $this->schemaService->getStorageMode((int) $site['id'], $existing['type']);
+        $this->writeThrough->deleteContent($site['slug'], $existing, $storageMode);
     }
 
     /**

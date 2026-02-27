@@ -111,7 +111,7 @@ class ContentApiTest extends TestCase
         $this->container->instance(TemplateHydratorService::class, $hydrator);
         $this->container->instance(WorkflowService::class, $workflow);
 
-        $schemaService = new SchemaService($schemaRepo, $contentRepo);
+        $schemaService = new SchemaService($schemaRepo, $contentRepo, $connection);
         $this->container->instance(SchemaService::class, $schemaService);
 
         $relationshipResolver = new RelationshipResolver($schemaService, $contentRepo, $markdown);

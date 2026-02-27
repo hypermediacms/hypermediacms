@@ -79,6 +79,16 @@ class Migrator
                 site_id INTEGER NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
                 expires_at TEXT NOT NULL
             )",
+
+            "CREATE TABLE IF NOT EXISTS content_type_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                site_id INTEGER NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+                content_type TEXT NOT NULL,
+                storage_mode TEXT DEFAULT 'content',
+                retention_days INTEGER,
+                retention_field TEXT DEFAULT 'created_at',
+                UNIQUE(site_id, content_type)
+            )",
         ];
 
         foreach ($statements as $sql) {

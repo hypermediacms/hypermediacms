@@ -93,6 +93,84 @@ class WriteThroughTest extends TestCase
         $this->assertFileDoesNotExist($filePath);
     }
 
+    public function test_create_content_data_mode_skips_file(): void
+    {
+        $record = $this->writeThrough->createContent('test', 1, [
+            'type' => 'todo',
+            'slug' => 'buy-milk',
+            'title' => 'Buy Milk',
+            'body' => '',
+            'status' => 'draft',
+        ], 'data');
+
+        // DB row exists
+        $this->assertNotNull($record['id']);
+        $dbRecord = $this->contentRepo->findById($record['id']);
+        $this->assertNotNull($dbRecord);
+        $this->assertEquals('Buy Milk', $dbRecord['title']);
+
+        // No file written
+        $filePath = $this->tempDir . '/content/test/todo/buy-milk.md';
+        $this->assertFileDoesNotExist($filePath);
+        $this->assertNull($record['file_path'] ?? null);
+    }
+
+    public function test_update_content_data_mode_skips_file(): void
+    {
+        $record = $this->writeThrough->createContent('test', 1, [
+            'type' => 'todo',
+            'slug' => 'update-me',
+            'title' => 'Update Me',
+            'body' => '',
+            'status' => 'draft',
+        ], 'data');
+
+        $updated = $this->writeThrough->updateContent('test', 1, $record, [
+            'title' => 'Updated Title',
+        ], 'data');
+
+        $this->assertEquals('Updated Title', $updated['title']);
+
+        // No file written
+        $filePath = $this->tempDir . '/content/test/todo/update-me.md';
+        $this->assertFileDoesNotExist($filePath);
+    }
+
+    public function test_delete_content_data_mode_skips_file(): void
+    {
+        $record = $this->writeThrough->createContent('test', 1, [
+            'type' => 'todo',
+            'slug' => 'delete-me',
+            'title' => 'Delete Me',
+            'body' => '',
+            'status' => 'draft',
+        ], 'data');
+
+        // Should not throw even though no file exists
+        $this->writeThrough->deleteContent('test', $record, 'data');
+
+        $this->assertNull($this->contentRepo->findById($record['id']));
+    }
+
+    public function test_content_mode_still_writes_file(): void
+    {
+        $record = $this->writeThrough->createContent('test', 1, [
+            'type' => 'article',
+            'slug' => 'content-mode',
+            'title' => 'Content Mode',
+            'body' => 'Body text.',
+            'status' => 'draft',
+        ], 'content');
+
+        // DB row exists
+        $this->assertNotNull($record['id']);
+
+        // File written
+        $filePath = $this->tempDir . '/content/test/article/content-mode.md';
+        $this->assertFileExists($filePath);
+        $this->assertStringContainsString('Content Mode', file_get_contents($filePath));
+    }
+
     public function test_save_schema_writes_db_and_file(): void
     {
         $fields = [

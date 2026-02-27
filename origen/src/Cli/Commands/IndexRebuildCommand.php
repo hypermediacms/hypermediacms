@@ -75,14 +75,47 @@ class IndexRebuildCommand implements CommandInterface
         }
         echo "  Schemas: {$schemaCount} rebuilt\n";
 
-        // 3. Rebuild content (preserve IDs from frontmatter)
+        // Load storage mode settings for all types
+        $dataTypes = []; // key: "siteId:type" => true for data/ephemeral types
+        $settingsStmt = $connection->pdo()->query('SELECT site_id, content_type, storage_mode FROM content_type_settings');
+        foreach ($settingsStmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
+            if ($row['storage_mode'] !== 'content') {
+                $dataTypes[$row['site_id'] . ':' . $row['content_type']] = true;
+            }
+        }
+
+        // 3. Delete only content-mode rows (data/ephemeral rows are preserved)
+        if (!empty($dataTypes)) {
+            // Delete content rows that are in 'content' storage mode (will be rebuilt from files)
+            $connection->pdo()->exec(
+                "DELETE FROM content WHERE id NOT IN (
+                    SELECT c.id FROM content c
+                    JOIN content_type_settings cts
+                      ON c.site_id = cts.site_id AND c.type = cts.content_type
+                    WHERE cts.storage_mode IN ('data', 'ephemeral')
+                )"
+            );
+        } else {
+            $connection->pdo()->exec('DELETE FROM content');
+        }
+
+        // Rebuild content from files (only content-mode types have files)
         $contentCount = 0;
+        $skippedCount = 0;
         foreach ($contentFiles->listAll() as $entry) {
             $siteSlug = $entry['siteSlug'];
             if (!isset($sites[$siteSlug])) {
                 continue;
             }
             $siteId = (int) $sites[$siteSlug]['id'];
+
+            // Skip file scan for data/ephemeral types
+            $typeKey = $siteId . ':' . $entry['type'];
+            if (isset($dataTypes[$typeKey])) {
+                $skippedCount++;
+                continue;
+            }
+
             $meta = $entry['meta'];
 
             $data = [
@@ -115,6 +148,9 @@ class IndexRebuildCommand implements CommandInterface
             $contentCount++;
         }
         echo "  Content: {$contentCount} entries rebuilt\n";
+        if ($skippedCount > 0) {
+            echo "  Skipped: {$skippedCount} data/ephemeral files\n";
+        }
 
         echo "Index rebuild complete.\n";
         return 0;
