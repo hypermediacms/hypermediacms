@@ -5,6 +5,7 @@
  * 
  * Model Context Protocol server for AI-assisted content management.
  * Exposes tools for creating HTX templates, managing content, and previewing.
+ * Exposes resources for reading content, schemas, and templates.
  * 
  * Usage: php mcp/server.php
  * 
@@ -16,6 +17,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use HyperMediaCMS\MCP\MCPServer;
+
+// Tools
 use HyperMediaCMS\MCP\Tools\CreateHTXTool;
 use HyperMediaCMS\MCP\Tools\ListContentTypesTool;
 use HyperMediaCMS\MCP\Tools\PreviewContentTool;
@@ -29,36 +32,68 @@ use HyperMediaCMS\MCP\Tools\ReadHTXTool;
 use HyperMediaCMS\MCP\Tools\UpdateHTXTool;
 use HyperMediaCMS\MCP\Tools\GetContentTool;
 
+// Resources
+use HyperMediaCMS\MCP\Resources\ContentListResource;
+use HyperMediaCMS\MCP\Resources\ContentItemResource;
+use HyperMediaCMS\MCP\Resources\SchemaResource;
+use HyperMediaCMS\MCP\Resources\TemplateResource;
+use HyperMediaCMS\MCP\Resources\SiteResource;
+
 // Load environment
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->safeLoad();
 
 $server = new MCPServer(
     name: 'hypermedia-cms',
-    version: '0.4.0'
+    version: '0.5.0'
 );
 
-// Register tools - Discovery
+// ============================================
+// Register Tools (12)
+// ============================================
+
+// Discovery
 $server->registerTool(new ListRoutesTool());
 $server->registerTool(new ListContentTypesTool());
 
-// Register tools - Scaffolding  
+// Scaffolding  
 $server->registerTool(new ScaffoldSectionTool());
 $server->registerTool(new CreateHTXTool());
 $server->registerTool(new CreateSchemaTool());
 
-// Register tools - Content Management
+// Template Management
+$server->registerTool(new ReadHTXTool());
+$server->registerTool(new UpdateHTXTool());
+
+// Content Management
 $server->registerTool(new GetContentTool());
 $server->registerTool(new CreateContentTool());
 $server->registerTool(new UpdateContentTool());
 $server->registerTool(new DeleteContentTool());
 
-// Register tools - Template Management
-$server->registerTool(new ReadHTXTool());
-$server->registerTool(new UpdateHTXTool());
-
-// Register tools - Preview
+// Preview
 $server->registerTool(new PreviewContentTool());
+
+// ============================================
+// Register Resources
+// ============================================
+
+// Content resources
+$server->registerResource(new ContentListResource());      // hcms://content/{type}
+$server->registerResource(new ContentItemResource());      // hcms://content/{type}/{slug}
+
+// Schema resources
+$server->registerResource(new SchemaResource(isList: true));  // hcms://schemas
+$server->registerResource(new SchemaResource(isList: false)); // hcms://schema/{type}
+
+// Template resources
+$server->registerResource(new TemplateResource(isList: true));  // hcms://templates
+$server->registerResource(new TemplateResource(isList: false)); // hcms://template/{path}
+
+// Site resources
+$server->registerResource(new SiteResource('routes'));     // hcms://site/routes
+$server->registerResource(new SiteResource('config'));     // hcms://site/config
+$server->registerResource(new SiteResource('stats'));      // hcms://site/stats
 
 // Run the server (stdio transport)
 $server->run();

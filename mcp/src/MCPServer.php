@@ -3,6 +3,7 @@
  * MCP Server Implementation
  * 
  * Handles JSON-RPC communication over stdio for the Model Context Protocol.
+ * Supports tools, resources, and prompts.
  */
 
 declare(strict_types=1);
@@ -10,6 +11,7 @@ declare(strict_types=1);
 namespace HyperMediaCMS\MCP;
 
 use HyperMediaCMS\MCP\Tools\ToolInterface;
+use HyperMediaCMS\MCP\Resources\ResourceInterface;
 
 class MCPServer
 {
@@ -17,6 +19,8 @@ class MCPServer
     private string $version;
     /** @var array<string, ToolInterface> */
     private array $tools = [];
+    /** @var array<ResourceInterface> */
+    private array $resources = [];
 
     public function __construct(string $name, string $version)
     {
@@ -30,6 +34,14 @@ class MCPServer
     public function registerTool(ToolInterface $tool): void
     {
         $this->tools[$tool->getName()] = $tool;
+    }
+
+    /**
+     * Register a resource with the server
+     */
+    public function registerResource(ResourceInterface $resource): void
+    {
+        $this->resources[] = $resource;
     }
 
     /**
@@ -86,6 +98,8 @@ class MCPServer
                 'tools/list' => $this->handleListTools(),
                 'tools/call' => $this->handleCallTool($params),
                 'resources/list' => $this->handleListResources(),
+                'resources/read' => $this->handleReadResource($params),
+                'resources/templates/list' => $this->handleListResourceTemplates(),
                 'prompts/list' => $this->handleListPrompts(),
                 default => throw new \InvalidArgumentException("Unknown method: {$method}")
             };
@@ -121,7 +135,10 @@ class MCPServer
             ],
             'capabilities' => [
                 'tools' => ['listChanged' => false],
-                'resources' => ['subscribe' => false, 'listChanged' => false],
+                'resources' => [
+                    'subscribe' => false, 
+                    'listChanged' => false
+                ],
                 'prompts' => ['listChanged' => false]
             ]
         ];
@@ -170,11 +187,70 @@ class MCPServer
     }
 
     /**
-     * Handle resources/list request (placeholder)
+     * Handle resources/list request
+     * Returns available resource instances for discovery
      */
     private function handleListResources(): array
     {
-        return ['resources' => []];
+        $resources = [];
+
+        foreach ($this->resources as $resource) {
+            // Get concrete instances from each resource
+            $instances = $resource->listInstances(5);
+            foreach ($instances as $instance) {
+                $resources[] = $instance;
+            }
+        }
+
+        return ['resources' => $resources];
+    }
+
+    /**
+     * Handle resources/templates/list request
+     * Returns parameterized resource templates
+     */
+    private function handleListResourceTemplates(): array
+    {
+        $templates = [];
+
+        foreach ($this->resources as $resource) {
+            if ($resource->isTemplate()) {
+                $templates[] = [
+                    'uriTemplate' => $resource->getUriPattern(),
+                    'name' => $resource->getName(),
+                    'description' => $resource->getDescription(),
+                    'mimeType' => $resource->getMimeType()
+                ];
+            }
+        }
+
+        return ['resourceTemplates' => $templates];
+    }
+
+    /**
+     * Handle resources/read request
+     */
+    private function handleReadResource(array $params): array
+    {
+        $uri = $params['uri'] ?? '';
+
+        if (empty($uri)) {
+            throw new \InvalidArgumentException('Resource URI is required');
+        }
+
+        // Find a matching resource handler
+        foreach ($this->resources as $resource) {
+            if ($resource->matches($uri)) {
+                $params = $resource->extractParams($uri);
+                $content = $resource->read($params);
+                
+                return [
+                    'contents' => [$content]
+                ];
+            }
+        }
+
+        throw new \InvalidArgumentException("No handler found for resource: {$uri}");
     }
 
     /**
