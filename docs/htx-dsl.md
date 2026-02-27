@@ -97,6 +97,35 @@ Placeholders support **dot notation** for nested data. For example, `__author.na
 
 **Escaping:** All placeholder values are HTML-escaped by default. Fields listed as trusted HTML (`body_html`, `status_options`, `type_options`, `custom_fields_html`) are output without escaping because Origen is responsible for sanitizing them. To include a literal `__placeholder__` in your output (without replacement), escape it with a backslash: `\__placeholder__`.
 
+### Deferred Placeholders (`%%placeholder%%`)
+
+The double-percent syntax `%%field%%` is a **deferred placeholder** designed for response templates in mutation flows. It solves a timing problem:
+
+- `__field__` placeholders are hydrated by **Rufinus** at render time, with the *current* values before a mutation.
+- `%%field%%` placeholders are ignored by Rufinus and pass through to **Origen**, which hydrates them during the execute phase with the *post-mutation* values.
+
+This is essential for patterns like to-do list toggles, where the server response needs to reflect the new state after an update, not the old state that was on the page.
+
+| Syntax | Hydrated by | When | Values |
+|--------|-------------|------|--------|
+| `__field__` | Rufinus | Page render (prepare phase) | Current/pre-mutation |
+| `%%field%%` | Origen | Execute phase | Post-mutation |
+
+Example -- a toggle button that swaps itself after mutation:
+
+```html
+<htx:response name="success">
+  <button hx-post="__endpoint__"
+          hx-vals='__payload__'
+          hx-target="this"
+          hx-swap="outerHTML">
+    %%status%%
+  </button>
+</htx:response>
+```
+
+Here, `__endpoint__` and `__payload__` are filled by Rufinus during prepare (they contain the action token needed for the next mutation). But `%%status%%` passes through untouched and gets replaced by Origen with the updated status value *after* the toggle executes.
+
 ### Repeating Blocks
 
 `<htx:each>...</htx:each>` repeats its inner HTML for each row in the result set:
@@ -439,6 +468,61 @@ The form template typically uses htmx attributes to submit:
 
 When the action is `delete` or `prepare-delete`, the flow is similar to set content but for deletion confirmation. Rufinus calls prepare, receives the action token, and hydrates a confirmation template.
 
+### Response Templates
+
+Response templates define the HTML that Origen returns after a mutation executes. They are declared inside the `<htx>` block using `<htx:response>` tags with a `name` attribute:
+
+```html
+<htx:response name="success">
+  <div class="flash">Saved!</div>
+</htx:response>
+
+<htx:response name="redirect">/articles/__slug__</htx:response>
+```
+
+Response templates are embedded in the prepare payload and sent back to Origen during execute. Origen hydrates them with the post-mutation data and returns the result as the HTTP response body. htmx then swaps this HTML into the page.
+
+**Named responses:**
+
+| Name | Purpose |
+|------|---------|
+| `success` | HTML fragment returned after a successful mutation |
+| `redirect` | URL to redirect to after mutation (Origen returns a redirect response) |
+
+**Chained mutations with deferred placeholders:**
+
+Response templates support the `%%placeholder%%` syntax for values that should reflect the post-mutation state. This enables chained mutation patterns where the server response itself contains a new form ready for the next action:
+
+```html
+<htx:action>update</htx:action>
+<htx:type>todo</htx:type>
+
+<htx>
+  <htx:each>
+    <div class="todo-item" id="todo-__id__">
+      <form hx-post="__endpoint__"
+            hx-vals='__payload__'
+            hx-target="#todo-__id__"
+            hx-swap="outerHTML">
+        <input type="hidden" name="completed" value="__completed__">
+        <button type="submit">__title__</button>
+      </form>
+    </div>
+  </htx:each>
+
+  <htx:response name="success">
+    <div class="todo-item" id="todo-%%id%%">
+      <span>%%title%% -- %%status%%</span>
+    </div>
+  </htx:response>
+</htx>
+```
+
+In this pattern:
+1. The form uses `__placeholder__` for current values (hydrated by Rufinus at render time).
+2. The response template uses `%%placeholder%%` for post-mutation values (hydrated by Origen at execute time).
+3. After the mutation, Origen returns the success template with the new values already filled in, and htmx swaps it into the DOM.
+
 ---
 
 ## Examples
@@ -572,3 +656,52 @@ Key expression features demonstrated:
 - `{{ time_ago(updated_at) }}` -- Converts the `updated_at` timestamp to a human-readable relative string like "3 hours ago".
 - `{{! body_html }}` -- Outputs the pre-rendered Markdown HTML without escaping (the `!` flag disables HTML escaping).
 - `{{ if not empty(summary) }}...{{ endif }}` -- Conditionally renders content only when the `summary` field has a value (used in the docs index page).
+
+### Chained Mutation: To-Do Toggle
+
+A to-do list demonstrating the `%%placeholder%%` deferred syntax for mutations that return updated UI:
+
+```html
+<!-- /todos/index.htx -->
+<htx:type>todo</htx:type>
+<htx:action>update</htx:action>
+<htx:order>recent</htx:order>
+<htx:howmany>50</htx:howmany>
+
+<htx>
+  <h1>To-Do List</h1>
+  <htx:each>
+    <div class="todo-item" id="todo-__id__">
+      <form hx-post="__endpoint__"
+            hx-vals='__payload__'
+            hx-target="#todo-__id__"
+            hx-swap="outerHTML">
+        <input type="hidden" name="completed"
+               value="{{ if completed == "1" }}0{{ else }}1{{ endif }}">
+        <label>
+          <input type="checkbox" {{ if completed == "1" }}checked{{ endif }}
+                 onclick="this.form.requestSubmit()">
+          __title__
+        </label>
+      </form>
+    </div>
+  </htx:each>
+
+  <htx:response name="success">
+    <div class="todo-item" id="todo-%%id%%">
+      <span>%%title%%</span>
+    </div>
+  </htx:response>
+
+  <htx:none>
+    <p>No to-dos yet.</p>
+  </htx:none>
+</htx>
+```
+
+Key patterns demonstrated:
+
+- `__endpoint__` and `__payload__` are hydrated by Rufinus at render time with the prepare token for the mutation.
+- The hidden input flips the `completed` value using an expression conditional.
+- `<htx:response name="success">` defines the HTML Origen returns after the toggle executes.
+- `%%id%%` and `%%title%%` inside the response template are deferred -- they pass through Rufinus untouched and are hydrated by Origen with the post-mutation values.
