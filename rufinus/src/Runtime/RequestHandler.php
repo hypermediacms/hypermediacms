@@ -80,8 +80,8 @@ class RequestHandler
                 $html = $expressionEngine->evaluate($html, []);
             }
 
-            // Hydrate route params into admin static pages (e.g. /admin/types/[ct])
-            if (!empty($match->params) && str_starts_with(trim($path, '/'), 'admin/')) {
+            // Hydrate route params into static pages (e.g. /admin/types/[ct])
+            if (!empty($match->params)) {
                 foreach ($match->params as $name => $value) {
                     $html = str_replace('__' . $name . '__', htmlspecialchars($value, ENT_QUOTES, 'UTF-8'), $html);
                 }
@@ -109,6 +109,13 @@ class RequestHandler
             $html = $this->executeDsl($htx, $dsl);
         } catch (\Exception $e) {
             return $this->handleError($siteRoot, 500);
+        }
+
+        // Hydrate any remaining __param__ placeholders from route params
+        if (!empty($match->params)) {
+            foreach ($match->params as $name => $value) {
+                $html = str_replace('__' . $name . '__', htmlspecialchars($value, ENT_QUOTES, 'UTF-8'), $html);
+            }
         }
 
         // Apply layouts. For HTMX fragments, skip only the root layout.
@@ -229,7 +236,7 @@ class RequestHandler
 
         // Step 1: Replace __param__ placeholders inside <htx:*> meta directive tags
         $dsl = preg_replace_callback(
-            '/<htx:(\w+)>([^<]*)<\/htx:\1>/',
+            '/<htx:([\w.]+)>([^<]*)<\/htx:\1>/',
             function ($match) use ($safeParams) {
                 $tag = $match[1];
                 $content = $match[2];
@@ -243,7 +250,7 @@ class RequestHandler
 
         // Step 2: Determine which params are used inside <htx:where> after resolution
         $whereUsedParams = [];
-        if (preg_match('/<htx:where>([^<]*)<\/htx:where>/', $dsl, $whereMatch)) {
+        if (preg_match('/<htx:where(?:\.[\w]+)?>([^<]*)<\/htx:where(?:\.[\w]+)?>/', $dsl, $whereMatch)) {
             foreach ($safeParams as $name => $value) {
                 if (str_contains($whereMatch[1], $value)) {
                     $whereUsedParams[$name] = true;
