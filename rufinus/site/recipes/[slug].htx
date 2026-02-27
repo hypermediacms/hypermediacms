@@ -1,0 +1,35 @@
+<htx:type>recipe</htx:type>
+<htx:howmany>1</htx:howmany>
+
+<htx>
+  <htx:each>
+    <article style="max-width: 700px; margin: 0 auto;">
+      <a href="/recipes" hx-get="/recipes" hx-target="main" hx-push-url="true" 
+         style="display: inline-block; margin-bottom: 1.5rem; color: #1a1a2e; text-decoration: none; font-size: 0.9rem;">
+        ← Back to all recipes
+      </a>
+      
+      <div class="card" style="padding: 2rem;">
+        <header style="margin-bottom: 1.5rem;">
+          <h1 style="margin: 0; font-size: 1.75rem;">__title__</h1>
+          <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #888;">
+            {{ time_ago(updated_at) }}
+          </div>
+        </header>
+
+        <div style="line-height: 1.8; color: #333;">
+          {{! body_html }}
+        </div>
+      </div>
+    </article>
+  </htx:each>
+
+  <htx:none>
+    <div class="card" style="text-align: center; padding: 3rem;">
+      <p style="color: #666;">Not found.</p>
+      <a href="/recipes" hx-get="/recipes" hx-target="main" hx-push-url="true">
+        ← Back to all recipes
+      </a>
+    </div>
+  </htx:none>
+</htx>

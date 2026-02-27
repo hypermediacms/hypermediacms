@@ -104,6 +104,7 @@
     <a href="/" hx-get="/" hx-target="main" hx-push-url="true">Home</a>
     <a href="/articles" hx-get="/articles" hx-target="main" hx-push-url="true">Articles</a>
     <a href="/docs" hx-get="/docs" hx-target="main" hx-push-url="true">Docs</a>
+    <a href="/recipes" hx-get="/recipes" hx-target="main" hx-push-url="true">Recipes</a>
     <a href="/about" hx-get="/about" hx-target="main" hx-push-url="true">About</a>
     <a href="/admin" style="margin-left: auto; font-size: 0.8rem; opacity: 0.6;">Admin</a>
   </nav>

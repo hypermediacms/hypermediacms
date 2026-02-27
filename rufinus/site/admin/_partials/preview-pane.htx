@@ -1,0 +1,144 @@
+<!--
+  Preview Pane Partial
+  
+  Include this in edit forms to add live preview functionality.
+  Usage: Add to any admin edit page that needs preview.
+  
+  Requires:
+  - Form fields with name attributes
+  - Content type available as __type__ or data-content-type attribute
+-->
+
+<div class="preview-container" style="display: flex; gap: 2rem; align-items: flex-start;">
+  <!-- Form Column -->
+  <div class="preview-form-column" style="flex: 1; min-width: 0;">
+    <!-- Form content goes here via block -->
+  </div>
+  
+  <!-- Preview Column -->
+  <div class="preview-pane-column" style="flex: 1; min-width: 0; position: sticky; top: 1rem;">
+    <div class="preview-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3 style="margin: 0; font-size: 1rem; color: #666;">Live Preview</h3>
+      <button type="button" 
+              onclick="this.closest('.preview-container').querySelector('.preview-pane-column').classList.toggle('collapsed')"
+              style="background: none; border: 1px solid #ddd; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
+        Toggle
+      </button>
+    </div>
+    <div id="preview-output" 
+         class="preview-output card" 
+         style="padding: 1.5rem; min-height: 200px; background: #fafafa; border: 1px dashed #ddd;">
+      <p style="color: #888; text-align: center; margin: 2rem 0;">
+        Start typing to see preview...
+      </p>
+    </div>
+  </div>
+</div>
+
+<style>
+  .preview-pane-column.collapsed .preview-output {
+    display: none;
+  }
+  .preview-pane-column.collapsed {
+    flex: 0 0 auto;
+    width: auto;
+  }
+  @media (max-width: 900px) {
+    .preview-container {
+      flex-direction: column !important;
+    }
+    .preview-pane-column {
+      position: static !important;
+      order: -1;
+    }
+  }
+</style>
+
+<script>
+(function() {
+  // Debounce function
+  function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+  }
+
+  // Gather form data
+  function gatherFormData(form) {
+    const data = {};
+    const formData = new FormData(form);
+    for (const [key, value] of formData.entries()) {
+      if (!key.startsWith('htx-')) {
+        data[key] = value;
+      }
+    }
+    return data;
+  }
+
+  // Update preview
+  async function updatePreview(form) {
+    const output = document.getElementById('preview-output');
+    const contentType = form.dataset.contentType || form.querySelector('[name="type"]')?.value || 'article';
+    const content = gatherFormData(form);
+    
+    if (!content.title && !content.body) {
+      output.innerHTML = '<p style="color: #888; text-align: center; margin: 2rem 0;">Start typing to see preview...</p>';
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/preview', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Site-Key': 'htx-starter-key-001',
+          'X-HTX-Version': '1',
+          'HX-Request': 'true'
+        },
+        body: JSON.stringify({
+          content_type: contentType,
+          content: content
+        })
+      });
+
+      if (response.ok) {
+        const html = await response.text();
+        output.innerHTML = html || '<p style="color: #888;">No preview available</p>';
+      } else {
+        const error = await response.json();
+        output.innerHTML = `<p style="color: #c00;">Preview unavailable: ${error.message || 'Unknown error'}</p>`;
+      }
+    } catch (err) {
+      output.innerHTML = `<p style="color: #c00;">Preview error: ${err.message}</p>`;
+    }
+  }
+
+  // Initialize when DOM ready
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.preview-container form, form[data-preview]');
+    if (!form) return;
+
+    const debouncedUpdate = debounce(() => updatePreview(form), 300);
+
+    // Listen for input changes
+    form.addEventListener('input', debouncedUpdate);
+    form.addEventListener('change', debouncedUpdate);
+
+    // Initial preview
+    updatePreview(form);
+  });
+
+  // Also handle HTMX swaps (for SPA navigation)
+  document.body.addEventListener('htmx:afterSettle', function(e) {
+    const form = e.target.querySelector?.('.preview-container form, form[data-preview]');
+    if (form) {
+      const debouncedUpdate = debounce(() => updatePreview(form), 300);
+      form.addEventListener('input', debouncedUpdate);
+      form.addEventListener('change', debouncedUpdate);
+      updatePreview(form);
+    }
+  });
+})();
+</script>

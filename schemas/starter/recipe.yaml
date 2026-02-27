@@ -1,0 +1,17 @@
+fields:
+  -
+    field_name: prep_time
+    field_type: number
+    ui_hints:
+      placeholder: Minutes
+  -
+    field_name: servings
+    field_type: number
+  -
+    field_name: difficulty
+    field_type: select
+    constraints:
+      options: [easy, medium, hard]
+  -
+    field_name: ingredients
+    field_type: textarea

@@ -1,0 +1,30 @@
+<htx:type>recipe</htx:type>
+<htx:howmany>20</htx:howmany>
+<htx:order>recent</htx:order>
+
+<htx>
+  <div style="margin-bottom: 2rem;">
+    <h1>Recipes</h1>
+    <p style="color: #666;">Delicious recipes to try</p>
+  </div>
+
+  <htx:each>
+    <article class="card" style="margin-bottom: 1rem; padding: 1.5rem;">
+      <h3 style="margin-bottom: 0.5rem;">
+        <a href="/recipes/__slug__" hx-get="/recipes/__slug__" hx-target="main" hx-push-url="true">
+          __title__
+        </a>
+      </h3>
+      <p style="color: #666; margin-bottom: 0.5rem;">{{ truncate(body, 150) }}</p>
+      <div style="font-size: 0.85rem; color: #888;">
+        {{ time_ago(updated_at) }} &middot; <span class="status-__status__">__status__</span>
+      </div>
+    </article>
+  </htx:each>
+
+  <htx:none>
+    <div style="text-align: center; padding: 3rem; color: #666;">
+      <p>No recipes found.</p>
+    </div>
+  </htx:none>
+</htx>

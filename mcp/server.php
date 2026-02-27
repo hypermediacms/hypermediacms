@@ -21,6 +21,9 @@ use HyperMediaCMS\MCP\Tools\ListContentTypesTool;
 use HyperMediaCMS\MCP\Tools\PreviewContentTool;
 use HyperMediaCMS\MCP\Tools\CreateSchemaTool;
 use HyperMediaCMS\MCP\Tools\ListRoutesTool;
+use HyperMediaCMS\MCP\Tools\CreateContentTool;
+use HyperMediaCMS\MCP\Tools\UpdateContentTool;
+use HyperMediaCMS\MCP\Tools\ScaffoldSectionTool;
 
 // Load environment
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
@@ -28,15 +31,24 @@ $dotenv->safeLoad();
 
 $server = new MCPServer(
     name: 'hypermedia-cms',
-    version: '0.1.0'
+    version: '0.2.0'
 );
 
-// Register tools
-$server->registerTool(new CreateHTXTool());
-$server->registerTool(new ListContentTypesTool());
-$server->registerTool(new PreviewContentTool());
-$server->registerTool(new CreateSchemaTool());
+// Register tools - Discovery
 $server->registerTool(new ListRoutesTool());
+$server->registerTool(new ListContentTypesTool());
+
+// Register tools - Scaffolding  
+$server->registerTool(new ScaffoldSectionTool());
+$server->registerTool(new CreateHTXTool());
+$server->registerTool(new CreateSchemaTool());
+
+// Register tools - Content Management
+$server->registerTool(new CreateContentTool());
+$server->registerTool(new UpdateContentTool());
+
+// Register tools - Preview
+$server->registerTool(new PreviewContentTool());
 
 // Run the server (stdio transport)
 $server->run();

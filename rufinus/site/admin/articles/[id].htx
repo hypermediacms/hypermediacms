@@ -6,31 +6,117 @@
   <h1>Edit Article</h1>
   <p class="text-muted text-sm" style="margin-bottom: 1.5rem;">Update this article.</p>
 
-  <div class="admin-card">
-    <form hx-post="__endpoint__" hx-vals='__payload__' hx-target=".admin-main" hx-swap="innerHTML">
-      <div class="form-group">
-        <label for="title">Title</label>
-        <input type="text" id="title" name="title" value="__title__" required>
+  <div class="preview-container" style="display: flex; gap: 2rem; align-items: flex-start;">
+    <!-- Form Column -->
+    <div class="preview-form-column" style="flex: 1; min-width: 0;">
+      <div class="admin-card">
+        <form hx-post="__endpoint__" hx-vals='__payload__' hx-target=".admin-main" hx-swap="innerHTML" data-content-type="article" data-preview>
+          <input type="hidden" name="type" value="article">
+          <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title" value="__title__" required>
+          </div>
+          <div class="form-group">
+            <label for="slug">Slug</label>
+            <input type="text" id="slug" name="slug" value="__slug__" placeholder="auto-generated from title">
+          </div>
+          <div class="form-group">
+            <label for="body">Body (Markdown)</label>
+            <textarea id="body" name="body" rows="12">__body__</textarea>
+          </div>
+          __custom_fields_html__
+          <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              __status_options__
+            </select>
+          </div>
+          <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary">Update Article</button>
+            <a href="/admin/articles" hx-get="/admin/articles" hx-target=".admin-main" hx-push-url="true" class="btn btn-secondary">Cancel</a>
+          </div>
+        </form>
       </div>
-      <div class="form-group">
-        <label for="slug">Slug</label>
-        <input type="text" id="slug" name="slug" value="__slug__" placeholder="auto-generated from title">
+    </div>
+
+    <!-- Preview Column -->
+    <div class="preview-pane-column" style="flex: 1; min-width: 0; position: sticky; top: 5rem;">
+      <div class="preview-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <h3 style="margin: 0; font-size: 0.9rem; color: #666; font-weight: 500;">📄 Live Preview</h3>
+        <button type="button" id="preview-toggle"
+                style="background: none; border: 1px solid #ddd; padding: 0.2rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">
+          Hide
+        </button>
       </div>
-      <div class="form-group">
-        <label for="body">Body (Markdown)</label>
-        <textarea id="body" name="body">__body__</textarea>
+      <div id="preview-output" 
+           class="admin-card" 
+           style="padding: 1.5rem; min-height: 200px; background: #fff; border: 1px solid #e0e0e0;">
+        <p style="color: #888; text-align: center; margin: 2rem 0;">
+          Start typing to see preview...
+        </p>
       </div>
-      __custom_fields_html__
-      <div class="form-group">
-        <label for="status">Status</label>
-        <select id="status" name="status">
-          __status_options__
-        </select>
-      </div>
-      <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
-        <button type="submit" class="btn btn-primary">Update Article</button>
-        <a href="/admin/articles" hx-get="/admin/articles" hx-target=".admin-main" hx-push-url="true" class="btn btn-secondary">Cancel</a>
-      </div>
-    </form>
+    </div>
   </div>
+
+  <style>
+    .preview-pane-column.collapsed #preview-output { display: none; }
+    .preview-pane-column.collapsed { flex: 0 0 auto; width: 120px; }
+    @media (max-width: 1000px) {
+      .preview-container { flex-direction: column !important; }
+      .preview-pane-column { position: static !important; order: -1; margin-bottom: 1rem; }
+    }
+    .preview-output h1 { font-size: 1.5rem; }
+    .preview-output h2 { font-size: 1.25rem; }
+    .preview-output h3 { font-size: 1.1rem; }
+  </style>
+
+  <script>
+  (function() {
+    function debounce(fn, wait) {
+      let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+    }
+
+    function gatherFormData(form) {
+      const data = {};
+      new FormData(form).forEach((v, k) => { if (!k.startsWith('htx-')) data[k] = v; });
+      return data;
+    }
+
+    async function updatePreview(form) {
+      const output = document.getElementById('preview-output');
+      const content = gatherFormData(form);
+      
+      if (!content.title && !content.body) {
+        output.innerHTML = '<p style="color: #888; text-align: center; margin: 2rem 0;">Start typing to see preview...</p>';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Site-Key': 'htx-starter-key-001', 'X-HTX-Version': '1', 'HX-Request': 'true' },
+          body: JSON.stringify({ content_type: content.type || 'article', content })
+        });
+        output.innerHTML = res.ok ? await res.text() || '<p style="color:#888;">No preview</p>' 
+                                  : '<p style="color:#c00;">Preview unavailable</p>';
+      } catch (e) {
+        output.innerHTML = '<p style="color:#c00;">Preview error</p>';
+      }
+    }
+
+    const form = document.querySelector('form[data-preview]');
+    if (form) {
+      const update = debounce(() => updatePreview(form), 300);
+      form.addEventListener('input', update);
+      form.addEventListener('change', update);
+      setTimeout(() => updatePreview(form), 100);
+    }
+
+    document.getElementById('preview-toggle')?.addEventListener('click', function() {
+      const col = this.closest('.preview-pane-column');
+      col.classList.toggle('collapsed');
+      this.textContent = col.classList.contains('collapsed') ? 'Show' : 'Hide';
+    });
+  })();
+  </script>
 </htx>
