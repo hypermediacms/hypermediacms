@@ -1,0 +1,88 @@
+<?php
+
+namespace Origen\Storage\Database;
+
+class Migrator
+{
+    public function __construct(private Connection $connection) {}
+
+    public function run(): void
+    {
+        $statements = [
+            "CREATE TABLE IF NOT EXISTS sites (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                slug TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL,
+                domain TEXT NOT NULL UNIQUE,
+                api_key TEXT NOT NULL UNIQUE,
+                settings TEXT DEFAULT '{}',
+                active INTEGER DEFAULT 1,
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now'))
+            )",
+
+            "CREATE TABLE IF NOT EXISTS content (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                site_id INTEGER NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+                type TEXT NOT NULL,
+                slug TEXT NOT NULL,
+                title TEXT NOT NULL,
+                body TEXT DEFAULT '',
+                status TEXT DEFAULT 'draft',
+                file_path TEXT,
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now')),
+                UNIQUE(site_id, slug)
+            )",
+
+            "CREATE TABLE IF NOT EXISTS content_field_values (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                site_id INTEGER NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+                content_id INTEGER NOT NULL REFERENCES content(id) ON DELETE CASCADE,
+                field_name TEXT NOT NULL,
+                field_value TEXT,
+                UNIQUE(content_id, field_name)
+            )",
+
+            "CREATE TABLE IF NOT EXISTS field_schemas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                site_id INTEGER NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+                content_type TEXT NOT NULL,
+                field_name TEXT NOT NULL,
+                field_type TEXT NOT NULL,
+                constraints TEXT DEFAULT '{}',
+                ui_hints TEXT DEFAULT '{}',
+                sort_order INTEGER DEFAULT 0,
+                UNIQUE(site_id, content_type, field_name)
+            )",
+
+            "CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now'))
+            )",
+
+            "CREATE TABLE IF NOT EXISTS memberships (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                site_id INTEGER NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                role TEXT DEFAULT 'viewer',
+                UNIQUE(site_id, user_id)
+            )",
+
+            "CREATE TABLE IF NOT EXISTS used_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                jti TEXT NOT NULL UNIQUE,
+                site_id INTEGER NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+                expires_at TEXT NOT NULL
+            )",
+        ];
+
+        foreach ($statements as $sql) {
+            $this->connection->pdo()->exec($sql);
+        }
+    }
+}

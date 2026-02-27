@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hypermedia CMS</title>
+  <script src="https://unpkg.com/htmx.org@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #1a1a2e;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    nav {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 0.75rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    nav .brand {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-right: auto;
+      letter-spacing: -0.02em;
+    }
+    nav a {
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: #fff; }
+    main {
+      max-width: 960px;
+      width: 100%;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      flex: 1;
+    }
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: #888;
+      font-size: 0.85rem;
+      border-top: 1px solid #e0e0e0;
+      margin-top: auto;
+    }
+    a { color: #1a1a2e; }
+    h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+    h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+    h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .card {
+      background: #fff;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 1rem;
+    }
+    pre {
+      background: #1a1a2e;
+      color: #e0e0e0;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      margin: 1rem 0;
+    }
+    code {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.875em;
+    }
+    :not(pre) > code {
+      background: #f0f0f0;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid #eee;
+    }
+    th { font-weight: 600; background: #fafafa; }
+  </style>
+</head>
+<body>
+  <nav>
+    <span class="brand">Hypermedia CMS</span>
+    <a href="/" hx-get="/" hx-target="main" hx-push-url="true">Home</a>
+    <a href="/articles" hx-get="/articles" hx-target="main" hx-push-url="true">Articles</a>
+    <a href="/docs" hx-get="/docs" hx-target="main" hx-push-url="true">Docs</a>
+    <a href="/about" hx-get="/about" hx-target="main" hx-push-url="true">About</a>
+  </nav>
+  <main>__content__</main>
+  <footer>&copy; 2026 Hypermedia CMS &mdash; Powered by Origen + Rufinus</footer>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<htx>
+  <div class="card" style="padding: 2rem;">
+    <h1>About Hypermedia CMS</h1>
+    <p style="margin-top: 1rem; line-height: 1.8;">
+      Hypermedia CMS is an open-source content management system built on two core principles:
+      <strong>flat-file Markdown as source of truth</strong> and
+      <strong>hypermedia-driven rendering</strong>.
+    </p>
+
+    <h2 style="margin-top: 2rem;">Architecture</h2>
+    <ul style="margin-top: 0.5rem; padding-left: 1.5rem; line-height: 2;">
+      <li><strong>Origen</strong> &mdash; Framework-free PHP backend. Stores content as Markdown files with YAML frontmatter. Uses SQLite (WAL mode) as a read-optimized index.</li>
+      <li><strong>Rufinus</strong> &mdash; Edge runtime. Parses the HTX DSL, communicates with Origen's API, and renders HTML with htmx attributes for SPA-like navigation.</li>
+    </ul>
+
+    <h2 style="margin-top: 2rem;">Key Features</h2>
+    <ul style="margin-top: 0.5rem; padding-left: 1.5rem; line-height: 2;">
+      <li>File-based routing &mdash; the filesystem IS the router</li>
+      <li>Nested layouts &mdash; <code>_layout.htx</code> files wrap pages automatically</li>
+      <li>HTMX-aware &mdash; fragment responses for HX-Request, full pages otherwise</li>
+      <li>Two-phase mutations &mdash; prepare (get action token) then execute (use token)</li>
+      <li>Write-through sync &mdash; SQLite and flat files always stay consistent</li>
+      <li>Index rebuild &mdash; delete the database, rebuild from Markdown files</li>
+      <li>No framework dependencies &mdash; plain PHP 8.2+</li>
+    </ul>
+
+    <h2 style="margin-top: 2rem;">Stack</h2>
+    <table>
+      <tr><th>Component</th><th>Technology</th></tr>
+      <tr><td>Backend</td><td>PHP 8.2+, SQLite (WAL), Markdown flat files</td></tr>
+      <tr><td>Frontend Runtime</td><td>PHP 8.2+, HTX DSL parser, HTMX</td></tr>
+      <tr><td>Auth</td><td>HS256 JWT (24h auth tokens, 5min action tokens)</td></tr>
+      <tr><td>Markdown</td><td>CommonMark via league/commonmark</td></tr>
+      <tr><td>Config</td><td>YAML via symfony/yaml</td></tr>
+    </table>
+  </div>
+</htx>

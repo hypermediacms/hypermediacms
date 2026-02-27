@@ -1,0 +1,17 @@
+<htx:type>article</htx:type>
+<htx:order>recent</htx:order>
+<htx:howmany>20</htx:howmany>
+
+<htx>
+  <htx:each>
+    <article class="card">
+      <h3><a href="/articles/__slug__" hx-get="/articles/__slug__" hx-target="main" hx-push-url="true">__title__</a></h3>
+      <p>__body__</p>
+      <small style="color: #888;">__created_at__ &middot; __status__</small>
+    </article>
+  </htx:each>
+
+  <htx:none>
+    <p style="color: #888; padding: 2rem 0;">No articles found.</p>
+  </htx:none>
+</htx>

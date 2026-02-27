@@ -1,0 +1,8 @@
+<div style="text-align: center; padding: 4rem 1rem;">
+  <h1 style="font-size: 5rem; color: #ddd; font-weight: 800; line-height: 1;">__status_code__</h1>
+  <p style="font-size: 1.2rem; color: #666; margin-top: 1rem;">Page not found</p>
+  <a href="/" hx-get="/" hx-target="main" hx-push-url="true"
+     style="display: inline-block; margin-top: 1.5rem; color: #1a1a2e; font-weight: 600;">
+    &larr; Go home
+  </a>
+</div>

@@ -1,0 +1,27 @@
+#!/usr/bin/env php
+<?php
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+use Origen\Bootstrap;
+use Origen\Cli\Application;
+use Origen\Cli\Commands\ServeCommand;
+use Origen\Cli\Commands\ServeSiteCommand;
+use Origen\Cli\Commands\ServeAllCommand;
+use Origen\Cli\Commands\IndexRebuildCommand;
+use Origen\Cli\Commands\UserCreateCommand;
+use Origen\Cli\Commands\SiteCreateCommand;
+use Origen\Cli\Commands\TokenCleanupCommand;
+
+$container = Bootstrap::bootCli(__DIR__);
+
+$app = new Application($container);
+$app->register(new ServeCommand());
+$app->register(new ServeSiteCommand());
+$app->register(new ServeAllCommand());
+$app->register(new IndexRebuildCommand());
+$app->register(new UserCreateCommand());
+$app->register(new SiteCreateCommand());
+$app->register(new TokenCleanupCommand());
+
+exit($app->run($argv));

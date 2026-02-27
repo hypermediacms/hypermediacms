@@ -1,0 +1,31 @@
+{
+    "name": "hypermediacms/hypermedia-cms",
+    "description": "A hypermedia-driven content management system with flat-file storage and SQLite indexing.",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Origen\\": "origen/src/",
+            "Rufinus\\": "rufinus/src/"
+        },
+        "files": [
+            "origen/src/helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Origen\\Tests\\": "origen/tests/",
+            "Rufinus\\Tests\\": "rufinus/tests/"
+        }
+    },
+    "require": {
+        "php": "^8.2",
+        "firebase/php-jwt": "^6.10",
+        "league/commonmark": "^2.5",
+        "symfony/yaml": "^7.0",
+        "ext-pdo_sqlite": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    }
+}

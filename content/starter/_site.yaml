@@ -1,0 +1,5 @@
+name: Starter Site
+domain: localhost
+api_key: htx-starter-key-001
+active: true
+settings: {}
