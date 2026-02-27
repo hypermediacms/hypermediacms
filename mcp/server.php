@@ -39,13 +39,21 @@ use HyperMediaCMS\MCP\Resources\SchemaResource;
 use HyperMediaCMS\MCP\Resources\TemplateResource;
 use HyperMediaCMS\MCP\Resources\SiteResource;
 
+// Prompts
+use HyperMediaCMS\MCP\Prompts\CreateBlogSectionPrompt;
+use HyperMediaCMS\MCP\Prompts\CreateLandingPagePrompt;
+use HyperMediaCMS\MCP\Prompts\CreatePortfolioPrompt;
+use HyperMediaCMS\MCP\Prompts\SetupDocsPrompt;
+use HyperMediaCMS\MCP\Prompts\AuditSitePrompt;
+use HyperMediaCMS\MCP\Prompts\QuickContentPrompt;
+
 // Load environment
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->safeLoad();
 
 $server = new MCPServer(
     name: 'hypermedia-cms',
-    version: '0.5.0'
+    version: '0.6.0'
 );
 
 // ============================================
@@ -94,6 +102,17 @@ $server->registerResource(new TemplateResource(isList: false)); // hcms://templa
 $server->registerResource(new SiteResource('routes'));     // hcms://site/routes
 $server->registerResource(new SiteResource('config'));     // hcms://site/config
 $server->registerResource(new SiteResource('stats'));      // hcms://site/stats
+
+// ============================================
+// Register Prompts (6)
+// ============================================
+
+$server->registerPrompt(new CreateBlogSectionPrompt());    // create_blog_section
+$server->registerPrompt(new CreateLandingPagePrompt());    // create_landing_page
+$server->registerPrompt(new CreatePortfolioPrompt());      // create_portfolio
+$server->registerPrompt(new SetupDocsPrompt());            // setup_docs
+$server->registerPrompt(new AuditSitePrompt());            // audit_site
+$server->registerPrompt(new QuickContentPrompt());         // quick_content
 
 // Run the server (stdio transport)
 $server->run();

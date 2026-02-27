@@ -1,6 +1,6 @@
 {
   "name": "hypermedia-cms",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "MCP server for AI-assisted content management with Hypermedia CMS",
   "repository": "https://github.com/hypermediacms/hypermediacms",
   "author": "Hypermedia CMS",
@@ -15,7 +15,7 @@
   "capabilities": {
     "tools": true,
     "resources": true,
-    "prompts": false
+    "prompts": true
   },
   "tools": [
     {"name": "list_routes", "description": "List all HTX routes in the site"},
@@ -41,5 +41,13 @@
     {"uri": "hcms://site/routes", "description": "All routes and their configurations"},
     {"uri": "hcms://site/config", "description": "Site settings and MCP info"},
     {"uri": "hcms://site/stats", "description": "Content counts and site metrics"}
+  ],
+  "prompts": [
+    {"name": "create_blog_section", "description": "Create a complete blog section with posts and customizable fields"},
+    {"name": "create_landing_page", "description": "Create a landing page with configurable sections"},
+    {"name": "create_portfolio", "description": "Create a portfolio/projects section to showcase work"},
+    {"name": "setup_docs", "description": "Set up a documentation section with sidebar navigation"},
+    {"name": "audit_site", "description": "Review site structure and suggest improvements"},
+    {"name": "quick_content", "description": "Quickly create content with AI-assisted writing"}
   ]
 }

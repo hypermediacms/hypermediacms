@@ -12,6 +12,7 @@ namespace HyperMediaCMS\MCP;
 
 use HyperMediaCMS\MCP\Tools\ToolInterface;
 use HyperMediaCMS\MCP\Resources\ResourceInterface;
+use HyperMediaCMS\MCP\Prompts\PromptInterface;
 
 class MCPServer
 {
@@ -21,6 +22,8 @@ class MCPServer
     private array $tools = [];
     /** @var array<ResourceInterface> */
     private array $resources = [];
+    /** @var array<string, PromptInterface> */
+    private array $prompts = [];
 
     public function __construct(string $name, string $version)
     {
@@ -42,6 +45,14 @@ class MCPServer
     public function registerResource(ResourceInterface $resource): void
     {
         $this->resources[] = $resource;
+    }
+
+    /**
+     * Register a prompt with the server
+     */
+    public function registerPrompt(PromptInterface $prompt): void
+    {
+        $this->prompts[$prompt->getName()] = $prompt;
     }
 
     /**
@@ -101,6 +112,7 @@ class MCPServer
                 'resources/read' => $this->handleReadResource($params),
                 'resources/templates/list' => $this->handleListResourceTemplates(),
                 'prompts/list' => $this->handleListPrompts(),
+                'prompts/get' => $this->handleGetPrompt($params),
                 default => throw new \InvalidArgumentException("Unknown method: {$method}")
             };
 
@@ -254,11 +266,46 @@ class MCPServer
     }
 
     /**
-     * Handle prompts/list request (placeholder)
+     * Handle prompts/list request
      */
     private function handleListPrompts(): array
     {
-        return ['prompts' => []];
+        $prompts = [];
+        
+        foreach ($this->prompts as $prompt) {
+            $prompts[] = [
+                'name' => $prompt->getName(),
+                'description' => $prompt->getDescription(),
+                'arguments' => $prompt->getArguments()
+            ];
+        }
+
+        return ['prompts' => $prompts];
+    }
+
+    /**
+     * Handle prompts/get request
+     */
+    private function handleGetPrompt(array $params): array
+    {
+        $name = $params['name'] ?? '';
+        $arguments = $params['arguments'] ?? [];
+
+        if (empty($name)) {
+            throw new \InvalidArgumentException('Prompt name is required');
+        }
+
+        if (!isset($this->prompts[$name])) {
+            throw new \InvalidArgumentException("Unknown prompt: {$name}");
+        }
+
+        $prompt = $this->prompts[$name];
+        $messages = $prompt->getMessages($arguments);
+
+        return [
+            'description' => $prompt->getDescription(),
+            'messages' => $messages
+        ];
     }
 
     /**
