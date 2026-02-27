@@ -191,8 +191,36 @@ $handler->handle(
 ### Start Servers & Create Admin
 ```bash
 php hcms serve:all &
-# Visit http://localhost:8080 to create first admin user
 ```
+
+#### Create Admin User (non-interactive for agent deployment)
+```bash
+# Generate secure password and create admin
+php hcms user:create \
+  --email="admin@yoursite.com" \
+  --site=starter \
+  --role=super_admin
+```
+
+Output:
+```
+User created (id=1).
+Generated password: xK9#mP2$vL7nQ4Rz
+Password reset required on first login.
+Membership created: admin@yoursite.com → Starter Site (super_admin)
+```
+
+**Report to user:** Share the email and generated password. They'll be forced to change it on first login.
+
+#### User flags:
+- `--email` (required) — user's email
+- `--name` (optional, default: "Admin") — display name
+- `--password` (optional) — use specific password instead of generating
+- `--site` (default: "main") — site slug from _site.yaml
+- `--role` (default: "super_admin") — one of: super_admin, tenant_admin, editor, author, viewer
+
+#### Interactive mode
+Running `php hcms user:create` without flags enters interactive TUI mode.
 
 ## Phase 6: Content Population
 
@@ -322,7 +350,8 @@ curl -s http://localhost:8081/admin/ | grep -c "login"
 | Task | Command/Location |
 |------|------------------|
 | Start servers | `php hcms serve:all` |
-| Create user | `php hcms user:create` |
+| Create user (interactive) | `php hcms user:create` |
+| Create user (non-interactive) | `php hcms user:create --email=... --site=...` |
 | Rebuild index | `php hcms index:rebuild` |
 | Site config | `content/<site>/_site.yaml` |
 | Schemas | `schemas/<site>/<type>.yaml` |

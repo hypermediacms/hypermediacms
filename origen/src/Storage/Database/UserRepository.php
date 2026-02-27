@@ -20,13 +20,27 @@ class UserRepository
         return $row ?: null;
     }
 
-    public function create(string $name, string $email, string $passwordHash): array
+    public function create(string $name, string $email, string $passwordHash, bool $forceReset = false): array
     {
         $this->connection->execute(
-            'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)',
-            [$name, $email, $passwordHash]
+            'INSERT INTO users (name, email, password_hash, force_password_reset) VALUES (?, ?, ?, ?)',
+            [$name, $email, $passwordHash, $forceReset ? 1 : 0]
         );
         return $this->findById($this->connection->lastInsertId());
+    }
+
+    public function updatePassword(int $userId, string $passwordHash, bool $clearForceReset = true): void
+    {
+        $this->connection->execute(
+            'UPDATE users SET password_hash = ?, force_password_reset = ?, updated_at = datetime(\'now\') WHERE id = ?',
+            [$passwordHash, $clearForceReset ? 0 : 1, $userId]
+        );
+    }
+
+    public function requiresPasswordReset(int $userId): bool
+    {
+        $user = $this->findById($userId);
+        return $user && ($user['force_password_reset'] ?? 0) == 1;
     }
 
     public function findMembership(int $userId, int $siteId): ?array

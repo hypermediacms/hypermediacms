@@ -146,6 +146,7 @@ class Bootstrap
         $router->post('/api/auth/login', [AuthController::class, 'login'], $tenantMiddleware);
         $router->get('/api/auth/me', [AuthController::class, 'me'], $tenantMiddleware);
         $router->post('/api/auth/logout', [AuthController::class, 'logout'], $tenantMiddleware);
+        $router->post('/api/auth/reset-password', [AuthController::class, 'resetPassword'], $tenantMiddleware);
 
         // Content routes
         $router->post('/api/content/prepare', [ContentController::class, 'prepare'], $tenantMiddleware);

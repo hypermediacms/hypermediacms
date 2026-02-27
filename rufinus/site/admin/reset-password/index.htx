@@ -1,0 +1,64 @@
+<div class="login-card">
+  <h1>Change Your Password</h1>
+  <p class="subtitle">Your account requires a password reset before continuing.</p>
+
+  <div id="reset-error" class="error-msg"></div>
+  <div id="reset-success" class="success-msg" style="display:none;"></div>
+
+  <form hx-post="/api/auth/reset-password"
+        hx-target="#reset-error"
+        hx-swap="innerHTML"
+        id="reset-form">
+    <div class="form-group">
+      <label for="new_password">New Password</label>
+      <input type="password" id="new_password" name="new_password" required 
+             autocomplete="new-password" autofocus minlength="8"
+             placeholder="At least 8 characters">
+    </div>
+    <div class="form-group">
+      <label for="confirm_password">Confirm Password</label>
+      <input type="password" id="confirm_password" name="confirm_password" required 
+             autocomplete="new-password" minlength="8">
+    </div>
+    <button type="submit" class="btn-login">Update Password</button>
+  </form>
+
+  <script>
+    document.body.addEventListener('htmx:beforeSwap', function(evt) {
+      if (evt.detail.xhr.status >= 400) {
+        evt.detail.shouldSwap = true;
+        evt.detail.isError = false;
+        var errorDiv = document.getElementById('reset-error');
+        if (errorDiv) {
+          try {
+            var data = JSON.parse(evt.detail.xhr.responseText);
+            errorDiv.textContent = data.error || 'Password reset failed.';
+          } catch(e) {
+            errorDiv.textContent = 'Password reset failed.';
+          }
+          errorDiv.style.display = 'block';
+        }
+        evt.detail.shouldSwap = false;
+      }
+    });
+
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+      if (evt.detail.xhr.status === 200 && evt.detail.pathInfo.requestPath === '/api/auth/reset-password') {
+        var errorDiv = document.getElementById('reset-error');
+        var successDiv = document.getElementById('reset-success');
+        var form = document.getElementById('reset-form');
+        
+        if (errorDiv) errorDiv.style.display = 'none';
+        if (form) form.style.display = 'none';
+        if (successDiv) {
+          successDiv.textContent = 'Password updated! Redirecting...';
+          successDiv.style.display = 'block';
+        }
+        
+        setTimeout(function() {
+          window.location.href = '/admin';
+        }, 1500);
+      }
+    });
+  </script>
+</div>

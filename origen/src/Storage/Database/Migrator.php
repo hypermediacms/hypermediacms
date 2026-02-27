@@ -61,6 +61,7 @@ class Migrator
                 name TEXT NOT NULL,
                 email TEXT NOT NULL UNIQUE,
                 password_hash TEXT NOT NULL,
+                force_password_reset INTEGER DEFAULT 0,
                 created_at TEXT DEFAULT (datetime('now')),
                 updated_at TEXT DEFAULT (datetime('now'))
             )",
@@ -93,6 +94,28 @@ class Migrator
 
         foreach ($statements as $sql) {
             $this->connection->pdo()->exec($sql);
+        }
+
+        // Run upgrade migrations for existing databases
+        $this->upgrade();
+    }
+
+    /**
+     * Run upgrade migrations for schema changes on existing databases.
+     */
+    private function upgrade(): void
+    {
+        // Add force_password_reset column if missing (v1.1+)
+        $this->addColumnIfMissing('users', 'force_password_reset', 'INTEGER DEFAULT 0');
+    }
+
+    private function addColumnIfMissing(string $table, string $column, string $definition): void
+    {
+        $stmt = $this->connection->pdo()->query("PRAGMA table_info({$table})");
+        $columns = array_column($stmt->fetchAll(\PDO::FETCH_ASSOC), 'name');
+
+        if (!in_array($column, $columns)) {
+            $this->connection->pdo()->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$definition}");
         }
     }
 }

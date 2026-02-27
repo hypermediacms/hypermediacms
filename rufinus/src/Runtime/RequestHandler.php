@@ -142,7 +142,13 @@ class RequestHandler
             $data = json_decode($response->body, true);
             if (isset($data['token'])) {
                 $this->authGuard->setAuthCookie($response, $data['token']);
-                $response->headers['HX-Redirect'] = '/admin';
+
+                // Force password reset on first login with generated password
+                if (!empty($data['force_password_reset'])) {
+                    $response->headers['HX-Redirect'] = '/admin/reset-password';
+                } else {
+                    $response->headers['HX-Redirect'] = '/admin';
+                }
 
                 // Strip token from response body
                 unset($data['token']);
