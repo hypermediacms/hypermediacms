@@ -1,0 +1,36 @@
+<htx:action>update</htx:action>
+<htx:type>article</htx:type>
+<htx:responseRedirect>/admin/articles?saved=1</htx:responseRedirect>
+
+<htx>
+  <h1>Edit Article</h1>
+  <p class="text-muted text-sm" style="margin-bottom: 1.5rem;">Update this article.</p>
+
+  <div class="admin-card">
+    <form hx-post="__endpoint__" hx-vals='__payload__' hx-target=".admin-main" hx-swap="innerHTML">
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input type="text" id="title" name="title" value="__title__" required>
+      </div>
+      <div class="form-group">
+        <label for="slug">Slug</label>
+        <input type="text" id="slug" name="slug" value="__slug__" placeholder="auto-generated from title">
+      </div>
+      <div class="form-group">
+        <label for="body">Body (Markdown)</label>
+        <textarea id="body" name="body">__body__</textarea>
+      </div>
+      __custom_fields_html__
+      <div class="form-group">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          __status_options__
+        </select>
+      </div>
+      <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+        <button type="submit" class="btn btn-primary">Update Article</button>
+        <a href="/admin/articles" hx-get="/admin/articles" hx-target=".admin-main" hx-push-url="true" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</htx>

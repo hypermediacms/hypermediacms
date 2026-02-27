@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Hypermedia CMS</title>
+  <link rel="stylesheet" href="/public/css/admin.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sidebar-w: 220px;
+      --ink: #1e293b;
+      --ink-light: #475569;
+      --ink-muted: #94a3b8;
+      --bg: #ffffff;
+      --bg-subtle: #f8fafc;
+      --bg-muted: #f1f5f9;
+      --border: #e2e8f0;
+      --accent: #2563eb;
+      --accent-light: #eff6ff;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--ink);
+      background: var(--bg-subtle);
+      display: flex;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Sidebar */
+    .admin-sidebar {
+      width: var(--sidebar-w);
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 1.25rem 0;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+    }
+    .admin-sidebar .brand {
+      padding: 0 1.25rem 1rem;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-bottom: 1px solid #1e293b;
+      margin-bottom: 0.75rem;
+    }
+    .admin-sidebar .brand a { color: #e2e8f0; text-decoration: none; }
+    .admin-sidebar a {
+      display: block;
+      padding: 0.5rem 1.25rem;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.875rem;
+    }
+    .admin-sidebar a:hover { color: #f1f5f9; background: #1e293b; }
+    .admin-sidebar .nav-section {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #475569;
+      padding: 1rem 1.25rem 0.35rem;
+    }
+    .admin-sidebar .logout {
+      margin-top: auto;
+      padding: 1rem 1.25rem 0;
+      border-top: 1px solid #1e293b;
+    }
+
+    /* Main area */
+    .admin-main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 2rem 2.5rem;
+      max-width: 1200px;
+    }
+
+    /* Cards & tables */
+    .admin-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th, .admin-table td { padding: 0.6rem 0.75rem; text-align: left; font-size: 0.875rem; }
+    .admin-table th { color: var(--ink-muted); font-weight: 600; border-bottom: 2px solid var(--border); }
+    .admin-table td { border-bottom: 1px solid var(--bg-muted); }
+
+    /* Forms */
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--ink-light); margin-bottom: 0.35rem; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    }
+    .form-group textarea { min-height: 200px; resize: vertical; }
+
+    /* Buttons */
+    .btn { display: inline-block; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; font-weight: 600; border: none; cursor: pointer; text-decoration: none; }
+    .btn-primary { background: #0f172a; color: #fff; }
+    .btn-primary:hover { background: #1e293b; color: #fff; }
+    .btn-secondary { background: var(--bg-muted); color: var(--ink-light); }
+    .btn-secondary:hover { background: var(--border); color: var(--ink); }
+
+    /* Status badges */
+    .badge-status { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .badge-published { background: #f0fdf4; color: #16a34a; }
+    .badge-draft { background: #f1f5f9; color: #64748b; }
+    .badge-review { background: #fffbeb; color: #d97706; }
+    .badge-archived { background: #fef2f2; color: #dc2626; }
+
+    .text-muted { color: var(--ink-muted); }
+    .text-sm { font-size: 0.875rem; }
+
+    /* Toast */
+    #toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; }
+    .toast {
+      background: #0f172a;
+      color: #fff;
+      padding: 0.65rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+      animation: slideIn 0.3s ease;
+    }
+    .toast-error { background: #dc2626; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  </style>
+</head>
+<body>
+
+  <aside class="admin-sidebar">
+    <div class="brand"><a href="/">Hypermedia CMS</a></div>
+    <div class="nav-section">Content</div>
+    <a href="/admin" hx-get="/admin" hx-target=".admin-main" hx-push-url="true">Dashboard</a>
+    <a href="/admin/articles" hx-get="/admin/articles" hx-target=".admin-main" hx-push-url="true">Articles</a>
+    <a href="/admin/docs" hx-get="/admin/docs" hx-target=".admin-main" hx-push-url="true">Documentation</a>
+    <a href="/admin/forms" hx-get="/admin/forms" hx-target=".admin-main" hx-push-url="true">Forms</a>
+    <div class="nav-section">System</div>
+    <a href="/" target="_blank">View Site</a>
+    <div class="logout">
+      <a href="/admin/login" hx-post="/api/auth/logout" hx-target="body">Logout</a>
+    </div>
+  </aside>
+
+  <div class="admin-main">__content__</div>
+
+  <div id="toast-container"></div>
+
+  <script>
+    // Saved toast
+    if (window.location.search.includes('saved=1')) {
+      var t = document.createElement('div');
+      t.className = 'toast';
+      t.textContent = 'Saved successfully.';
+      document.getElementById('toast-container').appendChild(t);
+      setTimeout(function(){ t.remove(); }, 4500);
+      history.replaceState(null, '', window.location.pathname);
+    }
+
+    // Init EasyMDE
+    document.addEventListener('htmx:afterSettle', function() {
+      var el = document.getElementById('body');
+      if (el && el.tagName === 'TEXTAREA' && !el._mde) {
+        el._mde = new EasyMDE({ element: el, spellChecker: false, status: false, minHeight: '250px' });
+      }
+    });
+    var initEl = document.getElementById('body');
+    if (initEl && initEl.tagName === 'TEXTAREA') {
+      initEl._mde = new EasyMDE({ element: initEl, spellChecker: false, status: false, minHeight: '250px' });
+    }
+
+    // Error toasts on 422
+    document.body.addEventListener('htmx:responseError', function(evt) {
+      var msg = 'Something went wrong.';
+      try { msg = JSON.parse(evt.detail.xhr.responseText).message || msg; } catch(e) {}
+      var t = document.createElement('div');
+      t.className = 'toast toast-error';
+      t.textContent = msg;
+      document.getElementById('toast-container').appendChild(t);
+      setTimeout(function(){ t.remove(); }, 4500);
+    });
+  </script>
+  <script src="/public/js/admin.js"></script>
+
+</body>
+</html>
