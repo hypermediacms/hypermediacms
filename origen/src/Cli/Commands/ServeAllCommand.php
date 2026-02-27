@@ -28,7 +28,7 @@ class ServeAllCommand implements CommandInterface
 
         $siteHost = '127.0.0.1';
         $sitePort = '8081';
-        $siteDocroot = dirname(__DIR__, 3) . '/rufinus/site';
+        $siteDocroot = dirname(__DIR__, 4) . '/rufinus/site';
 
         if (!is_dir($siteDocroot)) {
             echo "Error: Rufinus site directory not found at {$siteDocroot}\n";
