@@ -93,13 +93,10 @@ class ListFilesTool implements ToolInterface
                 \RecursiveIteratorIterator::SELF_FIRST
             );
         } else {
-            $iterator = new \DirectoryIterator($path);
+            $iterator = new \FilesystemIterator($path, \FilesystemIterator::SKIP_DOTS);
         }
 
         foreach ($iterator as $file) {
-            if ($file->isDot()) {
-                continue;
-            }
 
             $relativePath = $this->getRelativePath($file->getPathname());
 
