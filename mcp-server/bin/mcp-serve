@@ -44,9 +44,16 @@ if (!$autoloader) {
 use HyperMedia\McpServer\Server;
 use HyperMedia\McpServer\Transport\StdioTransport;
 use HyperMedia\McpServer\Resources\HtxResource;
+use HyperMedia\McpServer\Resources\ContentResource;
+use HyperMedia\McpServer\Services\OrigenClient;
 use HyperMedia\McpServer\Tools\ReadFileTool;
 use HyperMedia\McpServer\Tools\WriteFileTool;
 use HyperMedia\McpServer\Tools\ListFilesTool;
+use HyperMedia\McpServer\Tools\QueryContentTool;
+use HyperMedia\McpServer\Tools\CreateContentTool;
+use HyperMedia\McpServer\Tools\UpdateContentTool;
+use HyperMedia\McpServer\Tools\DeleteContentTool;
+use HyperMedia\McpServer\Tools\GetSchemaTool;
 
 // Parse arguments
 $siteRoot = $argv[1] ?? null;
@@ -84,13 +91,33 @@ $config = array_merge([
 // Create server
 $server = new Server($siteRoot, $config);
 
+// Create Origen client
+$origen = new OrigenClient(
+    $config['origen_url'],
+    $config['site_key']
+);
+
+// Determine schema path
+$schemaPath = dirname($siteRoot, 2) . '/schemas';
+if (isset($config['schema_path'])) {
+    $schemaPath = $config['schema_path'];
+}
+
 // Register resources
 $server->registerResource(new HtxResource($siteRoot));
+$server->registerResource(new ContentResource($origen));
 
-// Register tools
+// Register file tools
 $server->registerTool(new ReadFileTool($siteRoot));
 $server->registerTool(new WriteFileTool($siteRoot, $config['audit_log']));
 $server->registerTool(new ListFilesTool($siteRoot));
+
+// Register content tools
+$server->registerTool(new QueryContentTool($origen));
+$server->registerTool(new CreateContentTool($origen));
+$server->registerTool(new UpdateContentTool($origen));
+$server->registerTool(new DeleteContentTool($origen));
+$server->registerTool(new GetSchemaTool($origen, $schemaPath));
 
 // Start transport
 $transport = new StdioTransport($server);
