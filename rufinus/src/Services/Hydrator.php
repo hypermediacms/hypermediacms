@@ -52,6 +52,10 @@ class Hydrator
         // Resolve dot-notation placeholders (e.g. __author.title__)
         $hydrated = $this->resolveDotNotation($hydrated, $data);
 
+        // Clean up any unreplaced placeholders (missing/null fields)
+        // This prevents __field__ from rendering literally when data is absent
+        $hydrated = preg_replace('/__[a-zA-Z_][a-zA-Z0-9_]*__/', '', $hydrated);
+
         // Restore escaped placeholders as literal text
         $hydrated = $this->restoreEscapedPlaceholders($hydrated, $escaped);
 
@@ -125,6 +129,9 @@ class Hydrator
 
         // Resolve dot-notation placeholders (e.g. __author.title__)
         $hydrated = $this->resolveDotNotation($hydrated, $data);
+
+        // Clean up any unreplaced placeholders (missing/null fields)
+        $hydrated = preg_replace('/__[a-zA-Z_][a-zA-Z0-9_]*__/', '', $hydrated);
 
         // Restore escaped placeholders as literal text
         $hydrated = $this->restoreEscapedPlaceholders($hydrated, $escaped);
