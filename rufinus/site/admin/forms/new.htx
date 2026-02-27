@@ -1,0 +1,152 @@
+<htx>
+<div class="admin-layout">
+  <header class="admin-header">
+    <div class="admin-header__logo">Hypermedia CMS</div>
+    <nav class="admin-header__nav">
+      <a href="/admin" class="admin-header__link">Dashboard</a>
+      <a href="/admin/forms" class="admin-header__link admin-header__link--active">Forms</a>
+    </nav>
+    <div></div>
+  </header>
+  
+  <main class="admin-main">
+    <div class="breadcrumbs">
+      <a href="/admin/forms" class="breadcrumbs__link">Forms</a>
+      <span class="breadcrumbs__separator">›</span>
+      <span class="breadcrumbs__current">New Form</span>
+    </div>
+
+    <div style="max-width: 480px;">
+      <div class="page-header">
+        <div>
+          <h1 class="page-header__title">Create New Form</h1>
+          <p class="page-header__subtitle">Start collecting responses from your users</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__body">
+          <form id="create-form">
+            <div class="form-group">
+              <label class="form-label form-label--required">Form Title</label>
+              <input 
+                type="text" 
+                class="form-input"
+                id="form-title"
+                required
+                placeholder="e.g., Contact Form"
+                autofocus
+              >
+            </div>
+
+            <div class="form-group">
+              <label class="form-label form-label--required">URL Slug</label>
+              <div style="display: flex;">
+                <span style="padding: var(--space-2) var(--space-3); background: var(--color-gray-100); border: 1px solid var(--color-gray-200); border-right: none; border-radius: var(--radius-md) 0 0 var(--radius-md); color: var(--color-gray-500); font-size: 0.9375rem;">/forms/</span>
+                <input 
+                  type="text" 
+                  class="form-input"
+                  id="form-slug"
+                  required
+                  placeholder="contact"
+                  pattern="[a-z0-9-]+"
+                  style="border-radius: 0 var(--radius-md) var(--radius-md) 0;"
+                >
+              </div>
+              <p class="form-hint">Lowercase letters, numbers, and hyphens only</p>
+            </div>
+
+            <div style="display: flex; gap: var(--space-3); margin-top: var(--space-6);">
+              <button type="submit" class="btn btn--primary btn--lg" style="flex: 1;">
+                Create Form
+              </button>
+              <a href="/admin/forms" class="btn btn--secondary btn--lg">
+                Cancel
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+document.getElementById('create-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const title = document.getElementById('form-title').value;
+  const slug = document.getElementById('form-slug').value;
+  const btn = this.querySelector('button[type="submit"]');
+  
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Creating...';
+  
+  try {
+    // Phase 1: Prepare
+    const prepareRes = await fetch('/api/content/prepare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': 'htx-bip-site-001', 'X-HTX-Version': '1' },
+      body: JSON.stringify({
+        type: 'form_definition',
+        title: title,
+        slug: slug,
+        status: 'published',
+        action: 'save',
+        fields: '[]',
+        active: 'false',
+        field_count: '0'
+      })
+    });
+    
+    if (!prepareRes.ok) throw new Error('Prepare failed');
+    const prepareData = await prepareRes.json();
+    const payloadStr = prepareData.data?.payload || '{}';
+    const payloadObj = JSON.parse(payloadStr);
+    const token = payloadObj['htx-token'];
+    
+    // Phase 2: Save
+    const saveRes = await fetch('/api/content/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': 'htx-bip-site-001', 'X-HTX-Version': '1' },
+      body: JSON.stringify({
+        type: 'form_definition',
+        title: title,
+        slug: slug,
+        status: 'published',
+        action: 'save',
+        fields: '[]',
+        active: 'false',
+        field_count: '0',
+        'htx-token': token,
+        'htx-context': 'save',
+        'htx-recordId': null
+      })
+    });
+    
+    if (saveRes.ok) {
+      window.location.href = '/admin/forms/' + slug + '/edit';
+    } else {
+      throw new Error('Save failed');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Error creating form. The slug may already be in use.');
+    btn.disabled = false;
+    btn.textContent = 'Create Form';
+  }
+});
+
+// Auto-generate slug from title
+document.getElementById('form-title').addEventListener('input', function() {
+  const slugInput = document.getElementById('form-slug');
+  if (!slugInput.dataset.edited) {
+    slugInput.value = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+});
+
+document.getElementById('form-slug').addEventListener('input', function() {
+  this.dataset.edited = 'true';
+});
+</script>
+</htx>

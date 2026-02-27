@@ -1,0 +1,94 @@
+<htx>
+<div class="admin-layout" style="display: flex; flex-direction: column; min-height: 100vh;">
+  <header class="admin-header">
+    <div class="admin-header__logo">Hypermedia CMS</div>
+    <nav class="admin-header__nav"></nav>
+    <div></div>
+  </header>
+  
+  <main style="flex: 1; display: flex; align-items: center; justify-content: center; padding: var(--space-8);">
+    <div class="card animate-fadeIn" style="width: 100%; max-width: 380px;">
+      <div class="card__body">
+        <h2 style="font-size: 1.25rem; font-weight: 600; color: var(--color-gray-900); margin-bottom: var(--space-6); text-align: center;">
+          Sign in to Admin
+        </h2>
+        
+        <form id="login-form">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input 
+              type="email" 
+              class="form-input" 
+              id="email" 
+              name="email"
+              required 
+              placeholder="you@example.com"
+              autocomplete="username"
+              autofocus
+            >
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input 
+              type="password" 
+              class="form-input" 
+              id="password" 
+              name="password"
+              required
+              placeholder="••••••••"
+              autocomplete="current-password"
+            >
+          </div>
+          
+          <div id="error-message" class="hidden" style="margin-bottom: var(--space-4); padding: var(--space-3); background: var(--color-error-light); color: var(--color-error); border-radius: var(--radius-md); font-size: 0.875rem;">
+          </div>
+          
+          <button type="submit" class="btn btn--primary btn--lg" style="width: 100%; margin-top: var(--space-4);">
+            Sign In
+          </button>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+document.getElementById('login-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const btn = this.querySelector('button[type="submit"]');
+  const errorEl = document.getElementById('error-message');
+  
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Signing in...';
+  errorEl.classList.add('hidden');
+  
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': 'htx-bip-site-001', 'X-HTX-Version': '1' },
+      body: JSON.stringify({ email, password })
+    });
+    
+    const data = await res.json();
+    
+    // Success: server sets cookie and returns user (token is stripped by proxy)
+    if (res.ok && data.user) {
+      // Check for HX-Redirect header or default to /admin/forms
+      const redirect = res.headers.get('HX-Redirect') || '/admin/forms';
+      window.location.href = redirect;
+    } else {
+      throw new Error(data.error || 'Invalid credentials');
+    }
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+  }
+});
+</script>
+</htx>

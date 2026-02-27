@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Hypermedia CMS</title>
+  <link rel="stylesheet" href="/public/css/admin.css">
+  <script src="https://unpkg.com/htmx.org@2"></script>
+</head>
+<body>
+__content__
+<script src="/public/js/admin.js"></script>
+</body>
+</html>

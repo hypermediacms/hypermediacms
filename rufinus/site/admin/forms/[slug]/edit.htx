@@ -1,0 +1,472 @@
+<htx:type>form_definition</htx:type>
+
+<htx>
+<div class="admin-layout">
+  <header class="admin-header">
+    <div class="admin-header__logo">Hypermedia CMS</div>
+    <nav class="admin-header__nav">
+      <a href="/admin" class="admin-header__link">Dashboard</a>
+      <a href="/admin/forms" class="admin-header__link admin-header__link--active">Forms</a>
+    </nav>
+    <div class="flex gap-3">
+      <label class="form-check" style="color: white;">
+        <input type="checkbox" id="form-active" onchange="toggleActive(this.checked)">
+        <span class="form-check__label" style="color: rgba(255,255,255,0.8);">Active</span>
+      </label>
+      <a href="/forms/__slug__" target="_blank" class="btn btn--secondary btn--sm">Preview ↗</a>
+      <a href="/admin/forms/__slug__/submissions" class="btn btn--secondary btn--sm">Submissions</a>
+    </div>
+  </header>
+  
+  <main class="admin-main">
+    <div class="breadcrumbs">
+      <a href="/admin/forms" class="breadcrumbs__link">Forms</a>
+      <span class="breadcrumbs__separator">›</span>
+      <span class="breadcrumbs__current">__title__</span>
+    </div>
+
+    <div class="builder">
+      <!-- Field Palette -->
+      <div class="builder__sidebar">
+        <div class="field-palette">
+          <div class="field-palette__header">
+            <div class="field-palette__title">Input Fields</div>
+          </div>
+          <div class="field-palette__list">
+            <button class="field-palette__item" onclick="addField('text')">
+              <span class="field-palette__item-icon">📝</span> Text
+            </button>
+            <button class="field-palette__item" onclick="addField('email')">
+              <span class="field-palette__item-icon">✉️</span> Email
+            </button>
+            <button class="field-palette__item" onclick="addField('textarea')">
+              <span class="field-palette__item-icon">📄</span> Text Area
+            </button>
+            <button class="field-palette__item" onclick="addField('select')">
+              <span class="field-palette__item-icon">📋</span> Dropdown
+            </button>
+            <button class="field-palette__item" onclick="addField('checkbox')">
+              <span class="field-palette__item-icon">☑️</span> Checkbox
+            </button>
+            <button class="field-palette__item" onclick="addField('radio')">
+              <span class="field-palette__item-icon">🔘</span> Radio Group
+            </button>
+            <button class="field-palette__item" onclick="addField('date')">
+              <span class="field-palette__item-icon">📅</span> Date
+            </button>
+            <button class="field-palette__item" onclick="addField('number')">
+              <span class="field-palette__item-icon">🔢</span> Number
+            </button>
+          </div>
+          <div class="field-palette__header" style="border-top: 1px solid var(--color-gray-100);">
+            <div class="field-palette__title">Layout</div>
+          </div>
+          <div class="field-palette__list">
+            <button class="field-palette__item" onclick="addField('heading')">
+              <span class="field-palette__item-icon">📌</span> Heading
+            </button>
+            <button class="field-palette__item" onclick="addField('paragraph')">
+              <span class="field-palette__item-icon">¶</span> Paragraph
+            </button>
+            <button class="field-palette__item" onclick="addField('divider')">
+              <span class="field-palette__item-icon">―</span> Divider
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Canvas -->
+      <div class="builder__main">
+        <div class="card">
+          <div class="card__header">
+            <input 
+              type="text" 
+              id="form-title" 
+              value="__title__" 
+              onchange="updateTitle()"
+              class="form-input"
+              style="font-size: 1.125rem; font-weight: 600; border: none; padding: 0; background: transparent;"
+              placeholder="Form title"
+            >
+            <div class="flex gap-2 items-center">
+              <span class="text-sm text-muted">Submit button:</span>
+              <input 
+                type="text" 
+                id="submit-text" 
+                placeholder="Submit"
+                onchange="updateSettings()"
+                class="form-input"
+                style="width: 120px;"
+              >
+            </div>
+          </div>
+          <div class="card__body">
+            <div id="fields-list" style="display: flex; flex-direction: column; gap: var(--space-3);">
+              <!-- Fields rendered here -->
+            </div>
+            <div id="empty-state" class="empty-state hidden">
+              <div class="empty-state__icon">👈</div>
+              <h3 class="empty-state__title">Add your first field</h3>
+              <p class="empty-state__text">Click a field type from the palette to add it to your form.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Panel -->
+      <div class="builder__settings">
+        <div id="settings-panel" class="settings-panel hidden">
+          <div class="settings-panel__header">
+            <span class="settings-panel__title">Field Settings</span>
+            <button onclick="closeSettings()" class="btn btn--ghost btn--icon btn--sm">✕</button>
+          </div>
+          <div class="settings-panel__body" id="settings-content">
+            <!-- Settings form rendered here -->
+          </div>
+        </div>
+        
+        <div id="settings-empty" class="settings-panel">
+          <div class="settings-panel__empty">
+            <div class="settings-panel__empty-icon">👆</div>
+            <p class="settings-panel__empty-text">Click a field to edit its settings</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const formId = __id__;
+  const formSlug = '__slug__';
+  let fields = [];
+  let selectedFieldIndex = null;
+
+  // Parse existing fields
+  try {
+    const rawFields = '__fields__';
+    if (rawFields && rawFields !== '' && rawFields !== 'undefined') {
+      fields = JSON.parse(rawFields.replace(/&quot;/g, '"')) || [];
+    }
+  } catch(e) { fields = []; }
+
+  // Set initial states
+  const activeVal = '__active__';
+  if (activeVal === 'true') {
+    document.getElementById('form-active').checked = true;
+  }
+  
+  const submitText = '__submit_text__';
+  if (submitText && submitText !== '' && submitText !== 'undefined') {
+    document.getElementById('submit-text').value = submitText;
+  }
+
+  const icons = {
+    text: '📝', email: '✉️', textarea: '📄', select: '📋',
+    checkbox: '☑️', radio: '🔘', date: '📅', number: '🔢',
+    heading: '📌', paragraph: '¶', divider: '―'
+  };
+
+  function renderFields() {
+    const container = document.getElementById('fields-list');
+    const emptyState = document.getElementById('empty-state');
+    
+    if (fields.length === 0) {
+      container.innerHTML = '';
+      emptyState.classList.remove('hidden');
+      return;
+    }
+    
+    emptyState.classList.add('hidden');
+    container.innerHTML = fields.map((field, index) => `
+      <div 
+        class="field-card ${selectedFieldIndex === index ? 'field-card--selected' : ''}" 
+        onclick="selectField(${index})"
+      >
+        <div class="field-card__drag">⠿</div>
+        <div class="field-card__content">
+          <div class="field-card__header">
+            <span class="field-card__icon">${icons[field.type] || '❓'}</span>
+            <span class="field-card__label">${field.label || 'Untitled'}</span>
+            ${field.required ? '<span class="badge badge--error" style="font-size: 0.625rem;">Required</span>' : ''}
+            <span class="field-card__type">${field.type}</span>
+          </div>
+          <div class="field-card__preview">
+            ${renderFieldPreview(field)}
+          </div>
+        </div>
+        <div class="field-card__actions">
+          <button onclick="event.stopPropagation(); deleteField(${index})" class="btn btn--ghost btn--icon btn--sm" title="Delete">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderFieldPreview(field) {
+    switch(field.type) {
+      case 'text': case 'email': case 'number':
+        return `<input type="${field.type}" placeholder="${field.placeholder || ''}" disabled />`;
+      case 'textarea':
+        return `<textarea disabled placeholder="${field.placeholder || ''}" rows="2"></textarea>`;
+      case 'select':
+        return `<select disabled><option>${field.placeholder || 'Select...'}</option></select>`;
+      case 'checkbox':
+        return `<label style="display: flex; align-items: center; gap: 8px; color: var(--color-gray-400);"><input type="checkbox" disabled>${field.checkboxLabel || 'Checkbox'}</label>`;
+      case 'date':
+        return `<input type="date" disabled />`;
+      case 'radio':
+        return `<span style="color: var(--color-gray-400); font-size: 0.8125rem;">${(field.options || []).length} options</span>`;
+      case 'heading':
+        return `<div style="font-weight: 600; color: var(--color-gray-700);">${field.text || 'Heading'}</div>`;
+      case 'paragraph':
+        return `<div style="color: var(--color-gray-500); font-size: 0.875rem;">${field.text || 'Paragraph text...'}</div>`;
+      case 'divider':
+        return `<hr style="border: none; border-top: 1px solid var(--color-gray-200);" />`;
+      default:
+        return '';
+    }
+  }
+
+  function addField(type) {
+    const id = 'field_' + Date.now();
+    const newField = { id, type, label: getDefaultLabel(type), required: false };
+    
+    if (type === 'select' || type === 'radio') {
+      newField.options = [{ value: 'option1', label: 'Option 1' }, { value: 'option2', label: 'Option 2' }];
+    }
+    if (type === 'checkbox') newField.checkboxLabel = 'I agree';
+    if (type === 'heading') newField.text = 'Section Title';
+    if (type === 'paragraph') newField.text = 'Add descriptive text here...';
+    if (type === 'textarea') newField.rows = 4;
+    
+    fields.push(newField);
+    selectedFieldIndex = fields.length - 1;
+    renderFields();
+    renderSettings();
+    saveFields();
+  }
+
+  function getDefaultLabel(type) {
+    const labels = {
+      text: 'Text Field', email: 'Email', textarea: 'Message', select: 'Select Option',
+      checkbox: 'Checkbox', radio: 'Choose One', date: 'Date', number: 'Number',
+      heading: '', paragraph: '', divider: ''
+    };
+    return labels[type] || 'New Field';
+  }
+
+  function selectField(index) {
+    selectedFieldIndex = index;
+    renderFields();
+    renderSettings();
+  }
+
+  function deleteField(index) {
+    if (confirm('Delete this field?')) {
+      fields.splice(index, 1);
+      if (selectedFieldIndex === index) { selectedFieldIndex = null; closeSettings(); }
+      else if (selectedFieldIndex > index) selectedFieldIndex--;
+      renderFields();
+      saveFields();
+    }
+  }
+
+  function renderSettings() {
+    const panel = document.getElementById('settings-panel');
+    const empty = document.getElementById('settings-empty');
+    const content = document.getElementById('settings-content');
+    
+    if (selectedFieldIndex === null) {
+      panel.classList.add('hidden');
+      empty.classList.remove('hidden');
+      return;
+    }
+    
+    panel.classList.remove('hidden');
+    empty.classList.add('hidden');
+    
+    const field = fields[selectedFieldIndex];
+    let html = '';
+    
+    // Label
+    if (field.type !== 'divider') {
+      html += `
+        <div class="form-group">
+          <label class="form-label">Label</label>
+          <input type="text" class="form-input" value="${field.label || ''}" onchange="updateField('label', this.value)">
+        </div>
+      `;
+    }
+    
+    // Field ID
+    if (!['heading', 'paragraph', 'divider'].includes(field.type)) {
+      html += `
+        <div class="form-group">
+          <label class="form-label">Field ID</label>
+          <input type="text" class="form-input text-mono" value="${field.id || ''}" onchange="updateField('id', this.value)">
+          <p class="form-hint">Used in submission data</p>
+        </div>
+      `;
+    }
+    
+    // Placeholder
+    if (['text', 'email', 'number', 'textarea', 'select'].includes(field.type)) {
+      html += `
+        <div class="form-group">
+          <label class="form-label">Placeholder</label>
+          <input type="text" class="form-input" value="${field.placeholder || ''}" onchange="updateField('placeholder', this.value)">
+        </div>
+      `;
+    }
+    
+    // Options
+    if (['select', 'radio'].includes(field.type)) {
+      html += `
+        <div class="form-group">
+          <label class="form-label">Options</label>
+          <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+            ${(field.options || []).map((opt, i) => `
+              <div style="display: flex; gap: var(--space-2);">
+                <input type="text" class="form-input" value="${opt.label}" onchange="updateOption(${i}, this.value)" style="flex: 1;">
+                <button onclick="deleteOption(${i})" class="btn btn--ghost btn--sm">✕</button>
+              </div>
+            `).join('')}
+          </div>
+          <button onclick="addOption()" class="btn btn--ghost btn--sm mt-2">+ Add option</button>
+        </div>
+      `;
+    }
+    
+    // Checkbox label
+    if (field.type === 'checkbox') {
+      html += `
+        <div class="form-group">
+          <label class="form-label">Checkbox Text</label>
+          <input type="text" class="form-input" value="${field.checkboxLabel || ''}" onchange="updateField('checkboxLabel', this.value)">
+        </div>
+      `;
+    }
+    
+    // Heading/Paragraph text
+    if (['heading', 'paragraph'].includes(field.type)) {
+      html += `
+        <div class="form-group">
+          <label class="form-label">Text</label>
+          ${field.type === 'heading' 
+            ? `<input type="text" class="form-input" value="${field.text || ''}" onchange="updateField('text', this.value)">`
+            : `<textarea class="form-input" rows="3" onchange="updateField('text', this.value)">${field.text || ''}</textarea>`
+          }
+        </div>
+      `;
+    }
+    
+    // Textarea rows
+    if (field.type === 'textarea') {
+      html += `
+        <div class="form-group">
+          <label class="form-label">Rows</label>
+          <input type="number" class="form-input" value="${field.rows || 4}" min="1" max="20" onchange="updateField('rows', parseInt(this.value))">
+        </div>
+      `;
+    }
+    
+    // Required
+    if (!['heading', 'paragraph', 'divider'].includes(field.type)) {
+      html += `
+        <div class="form-group" style="padding-top: var(--space-4); border-top: 1px solid var(--color-gray-100); margin-top: var(--space-4);">
+          <label class="form-check">
+            <input type="checkbox" ${field.required ? 'checked' : ''} onchange="updateField('required', this.checked)">
+            <span class="form-check__label">Required field</span>
+          </label>
+        </div>
+      `;
+    }
+    
+    content.innerHTML = html;
+  }
+
+  function updateField(prop, value) {
+    if (selectedFieldIndex !== null) {
+      fields[selectedFieldIndex][prop] = value;
+      renderFields();
+      saveFields();
+    }
+  }
+
+  function addOption() {
+    if (selectedFieldIndex !== null) {
+      const field = fields[selectedFieldIndex];
+      if (!field.options) field.options = [];
+      const num = field.options.length + 1;
+      field.options.push({ value: 'option' + num, label: 'Option ' + num });
+      renderSettings();
+      saveFields();
+    }
+  }
+
+  function updateOption(index, label) {
+    if (selectedFieldIndex !== null) {
+      const field = fields[selectedFieldIndex];
+      field.options[index].label = label;
+      field.options[index].value = label.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      saveFields();
+    }
+  }
+
+  function deleteOption(index) {
+    if (selectedFieldIndex !== null) {
+      fields[selectedFieldIndex].options.splice(index, 1);
+      renderSettings();
+      saveFields();
+    }
+  }
+
+  function closeSettings() {
+    selectedFieldIndex = null;
+    document.getElementById('settings-panel').classList.add('hidden');
+    document.getElementById('settings-empty').classList.remove('hidden');
+    renderFields();
+  }
+
+  function saveFields() {
+    fetch('/api/content/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': 'htx-bip-site-001', 'X-HTX-Version': '1' },
+      body: JSON.stringify({ 
+        recordId: formId, 
+        fields: JSON.stringify(fields), 
+        field_count: fields.filter(f => !['heading', 'paragraph', 'divider'].includes(f.type)).length.toString() 
+      })
+    });
+  }
+
+  function updateTitle() {
+    const title = document.getElementById('form-title').value;
+    fetch('/api/content/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': 'htx-bip-site-001', 'X-HTX-Version': '1' },
+      body: JSON.stringify({ recordId: formId, title: title })
+    });
+  }
+
+  function updateSettings() {
+    const submitText = document.getElementById('submit-text').value;
+    fetch('/api/content/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': 'htx-bip-site-001', 'X-HTX-Version': '1' },
+      body: JSON.stringify({ recordId: formId, submit_text: submitText })
+    });
+  }
+
+  function toggleActive(checked) {
+    fetch('/api/content/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': 'htx-bip-site-001', 'X-HTX-Version': '1' },
+      body: JSON.stringify({ recordId: formId, active: checked ? 'true' : 'false' })
+    });
+  }
+
+  // Initial render
+  renderFields();
+</script>
+</htx>

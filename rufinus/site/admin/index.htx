@@ -1,0 +1,8 @@
+<htx>
+<script>window.location.href = '/admin/forms';</script>
+<div class="admin-layout">
+  <main class="admin-main" style="display: flex; align-items: center; justify-content: center; min-height: 50vh;">
+    <p>Redirecting to Forms...</p>
+  </main>
+</div>
+</htx>
