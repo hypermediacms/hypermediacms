@@ -74,6 +74,12 @@ class RequestHandler
             $htx = new EdgeHTX($centralUrl, $siteKey);
             $html = $htx->getParser()->extractTemplate($dsl) ?: $dsl;
 
+            // Evaluate expressions even on static pages (with empty data context)
+            $expressionEngine = $htx->getExpressionEngine();
+            if ($expressionEngine->hasExpressions($html)) {
+                $html = $expressionEngine->evaluate($html, []);
+            }
+
             // Hydrate route params into admin static pages (e.g. /admin/types/[ct])
             if (!empty($match->params) && str_starts_with(trim($path, '/'), 'admin/')) {
                 foreach ($match->params as $name => $value) {
