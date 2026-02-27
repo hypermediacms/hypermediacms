@@ -6,8 +6,10 @@ Model Context Protocol (MCP) server for AI-assisted content management.
 
 This MCP server enables AI assistants to:
 
-- **Create HTX templates** for displaying content at routes
+- **Scaffold complete content sections** with one command
+- **Create and read HTX templates** for displaying content
 - **Create schemas** defining custom fields for content types
+- **Full content CRUD** (create, read, update, delete)
 - **List routes and content types** in the site
 - **Preview content** through HTX templates without persisting
 
@@ -27,7 +29,80 @@ php mcp/server.php
 
 The server communicates via stdin/stdout using JSON-RPC (MCP protocol).
 
-## Available Tools
+## Claude Desktop Integration
+
+Add to your Claude Desktop MCP config (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "hypermedia-cms": {
+      "command": "php",
+      "args": ["/path/to/hypermediacms/mcp/server.php"],
+      "env": {
+        "SITE_KEY": "htx-starter-key-001"
+      }
+    }
+  }
+}
+```
+
+## Available Tools (10)
+
+### Discovery
+- `list_routes` - List all HTX routes in the site
+- `list_content_types` - List content types with schemas
+
+### Scaffolding
+- `scaffold_section` - Create complete section (schema + pages + admin)
+- `create_htx` - Create individual HTX template
+- `create_schema` - Create YAML schema for content type
+- `read_htx` - Read existing HTX template contents
+
+### Content Management
+- `create_content` - Create new content entry
+- `update_content` - Update existing content
+- `delete_content` - Delete content (requires confirmation)
+
+### Preview
+- `preview_content` - Preview content through template
+
+---
+
+### `scaffold_section`
+
+Create a complete content section with one command.
+
+**Parameters:**
+- `name` (required): Section name (singular, e.g., "event")
+- `plural`: Plural form for routes (default: name + "s")
+- `fields`: Array of field definitions
+- `template_style`: "card", "table", or "minimal"
+- `add_to_nav`: Add link to main navigation
+- `description`: Description for list page
+
+**Example:**
+```json
+{
+  "name": "scaffold_section",
+  "arguments": {
+    "name": "event",
+    "fields": [
+      {"name": "date", "type": "date", "required": true},
+      {"name": "location", "type": "text"},
+      {"name": "capacity", "type": "number"}
+    ],
+    "add_to_nav": true
+  }
+}
+```
+
+**Creates:**
+- Schema: `schemas/starter/event.yaml`
+- List page: `events/index.htx`
+- Single page: `events/[slug].htx`
+- Admin pages: `admin/events/index.htx`, `new.htx`, `[id].htx`
+- Navigation link (if `add_to_nav: true`)
 
 ### `create_htx`
 

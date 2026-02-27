@@ -1,0 +1,62 @@
+{
+  "name": "hypermedia-cms",
+  "version": "0.2.0",
+  "description": "MCP server for AI-assisted content management with Hypermedia CMS",
+  "repository": "https://github.com/hypermediacms/hypermediacms",
+  "author": "Hypermedia CMS",
+  "license": "MIT",
+  "runtime": "php",
+  "command": "php",
+  "args": ["mcp/server.php"],
+  "workingDirectory": ".",
+  "env": {
+    "SITE_KEY": "htx-starter-key-001"
+  },
+  "capabilities": {
+    "tools": true,
+    "resources": false,
+    "prompts": false
+  },
+  "tools": [
+    {
+      "name": "list_routes",
+      "description": "List all HTX routes in the site"
+    },
+    {
+      "name": "list_content_types",
+      "description": "List content types with their schemas and routes"
+    },
+    {
+      "name": "scaffold_section",
+      "description": "Create complete content section (schema + pages + admin)"
+    },
+    {
+      "name": "create_htx",
+      "description": "Create an HTX template file for a route"
+    },
+    {
+      "name": "create_schema",
+      "description": "Create a YAML schema for a content type"
+    },
+    {
+      "name": "create_content",
+      "description": "Create new content entry"
+    },
+    {
+      "name": "update_content",
+      "description": "Update existing content"
+    },
+    {
+      "name": "delete_content",
+      "description": "Delete content by ID or slug"
+    },
+    {
+      "name": "read_htx",
+      "description": "Read contents of an HTX template file"
+    },
+    {
+      "name": "preview_content",
+      "description": "Preview content through an HTX template"
+    }
+  ]
+}
