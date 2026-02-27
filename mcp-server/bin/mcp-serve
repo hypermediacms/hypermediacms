@@ -1,0 +1,102 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Hypermedia CMS MCP Server
+ * 
+ * Usage:
+ *   ./mcp-serve /path/to/site
+ *   ./mcp-serve /path/to/site /path/to/config.php
+ * 
+ * For Claude Desktop, add to claude_desktop_config.json:
+ * {
+ *   "mcpServers": {
+ *     "hypermediacms": {
+ *       "command": "php",
+ *       "args": ["/path/to/mcp-server/bin/mcp-serve", "/path/to/rufinus/site"]
+ *     }
+ *   }
+ * }
+ */
+
+// Find autoloader
+$autoloadPaths = [
+    __DIR__ . '/../vendor/autoload.php',           // Standalone
+    __DIR__ . '/../../../vendor/autoload.php',     // As part of hypermediacms
+    __DIR__ . '/../../../../vendor/autoload.php',  // Nested
+];
+
+$autoloader = null;
+foreach ($autoloadPaths as $path) {
+    if (file_exists($path)) {
+        $autoloader = require $path;
+        break;
+    }
+}
+
+if (!$autoloader) {
+    fwrite(STDERR, "Error: Could not find autoloader. Run 'composer install' first.\n");
+    exit(1);
+}
+
+use HyperMedia\McpServer\Server;
+use HyperMedia\McpServer\Transport\StdioTransport;
+use HyperMedia\McpServer\Resources\HtxResource;
+use HyperMedia\McpServer\Tools\ReadFileTool;
+use HyperMedia\McpServer\Tools\WriteFileTool;
+use HyperMedia\McpServer\Tools\ListFilesTool;
+
+// Parse arguments
+$siteRoot = $argv[1] ?? null;
+$configPath = $argv[2] ?? null;
+
+if (!$siteRoot) {
+    fwrite(STDERR, "Usage: mcp-serve <site-root> [config-file]\n");
+    fwrite(STDERR, "\n");
+    fwrite(STDERR, "Arguments:\n");
+    fwrite(STDERR, "  site-root    Path to the Rufinus site directory\n");
+    fwrite(STDERR, "  config-file  Optional path to config.php\n");
+    exit(1);
+}
+
+// Resolve site root
+$siteRoot = realpath($siteRoot);
+if (!$siteRoot || !is_dir($siteRoot)) {
+    fwrite(STDERR, "Error: Site root directory not found: {$argv[1]}\n");
+    exit(1);
+}
+
+// Load config
+$config = [];
+if ($configPath && file_exists($configPath)) {
+    $config = require $configPath;
+}
+
+// Merge with defaults
+$config = array_merge([
+    'origen_url' => getenv('ORIGEN_URL') ?: 'http://localhost:8082',
+    'site_key' => getenv('SITE_KEY') ?: 'htx-default-key',
+    'audit_log' => null,
+], $config);
+
+// Create server
+$server = new Server($siteRoot, $config);
+
+// Register resources
+$server->registerResource(new HtxResource($siteRoot));
+
+// Register tools
+$server->registerTool(new ReadFileTool($siteRoot));
+$server->registerTool(new WriteFileTool($siteRoot, $config['audit_log']));
+$server->registerTool(new ListFilesTool($siteRoot));
+
+// Start transport
+$transport = new StdioTransport($server);
+
+fwrite(STDERR, "[MCP] Hypermedia CMS MCP Server\n");
+fwrite(STDERR, "[MCP] Site root: {$siteRoot}\n");
+fwrite(STDERR, "[MCP] Ready for connections\n");
+
+$transport->listen();
