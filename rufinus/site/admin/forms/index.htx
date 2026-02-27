@@ -27,7 +27,6 @@
     </div>
 
     <div class="card">
-      <htx:each>
       <div class="table-container">
         <table class="table">
           <thead>
@@ -40,10 +39,13 @@
             </tr>
           </thead>
           <tbody>
+            <htx:each>
             <tr>
               <td>
-                <div style="font-weight: 600; color: var(--color-gray-900);">__title__</div>
-                <div class="text-sm text-muted text-mono">/forms/__slug__</div>
+                <a href="/admin/forms/__slug__/edit" style="text-decoration: none; display: block;">
+                  <div style="font-weight: 600; color: var(--color-gray-900);">__title__</div>
+                  <div class="text-sm text-muted text-mono">/forms/__slug__</div>
+                </a>
               </td>
               <td>
                 <span class="badge badge--neutral">__field_count__ fields</span>
@@ -60,10 +62,10 @@
                 </div>
               </td>
             </tr>
+            </htx:each>
           </tbody>
         </table>
       </div>
-      </htx:each>
 
       <htx:none>
       <div class="empty-state">

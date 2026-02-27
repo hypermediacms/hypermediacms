@@ -8,7 +8,11 @@
       <a href="/admin" class="admin-header__link">Dashboard</a>
       <a href="/admin/forms" class="admin-header__link admin-header__link--active">Forms</a>
     </nav>
-    <div class="flex gap-3">
+    <div class="flex gap-3 items-center">
+      <div id="save-indicator" class="save-indicator">
+        <span class="save-indicator__icon">✓</span>
+        <span class="save-indicator__text">Saved</span>
+      </div>
       <label class="form-check" style="color: white;">
         <input type="checkbox" id="form-active" onchange="toggleActive(this.checked)">
         <span class="form-check__label" style="color: rgba(255,255,255,0.8);">Active</span>
@@ -33,28 +37,28 @@
             <div class="field-palette__title">Input Fields</div>
           </div>
           <div class="field-palette__list">
-            <button class="field-palette__item" onclick="addField('text')">
+            <button class="field-palette__item" draggable="true" data-field-type="text" onclick="addField('text')">
               <span class="field-palette__item-icon">📝</span> Text
             </button>
-            <button class="field-palette__item" onclick="addField('email')">
+            <button class="field-palette__item" draggable="true" data-field-type="email" onclick="addField('email')">
               <span class="field-palette__item-icon">✉️</span> Email
             </button>
-            <button class="field-palette__item" onclick="addField('textarea')">
+            <button class="field-palette__item" draggable="true" data-field-type="textarea" onclick="addField('textarea')">
               <span class="field-palette__item-icon">📄</span> Text Area
             </button>
-            <button class="field-palette__item" onclick="addField('select')">
+            <button class="field-palette__item" draggable="true" data-field-type="select" onclick="addField('select')">
               <span class="field-palette__item-icon">📋</span> Dropdown
             </button>
-            <button class="field-palette__item" onclick="addField('checkbox')">
+            <button class="field-palette__item" draggable="true" data-field-type="checkbox" onclick="addField('checkbox')">
               <span class="field-palette__item-icon">☑️</span> Checkbox
             </button>
-            <button class="field-palette__item" onclick="addField('radio')">
+            <button class="field-palette__item" draggable="true" data-field-type="radio" onclick="addField('radio')">
               <span class="field-palette__item-icon">🔘</span> Radio Group
             </button>
-            <button class="field-palette__item" onclick="addField('date')">
+            <button class="field-palette__item" draggable="true" data-field-type="date" onclick="addField('date')">
               <span class="field-palette__item-icon">📅</span> Date
             </button>
-            <button class="field-palette__item" onclick="addField('number')">
+            <button class="field-palette__item" draggable="true" data-field-type="number" onclick="addField('number')">
               <span class="field-palette__item-icon">🔢</span> Number
             </button>
           </div>
@@ -62,13 +66,13 @@
             <div class="field-palette__title">Layout</div>
           </div>
           <div class="field-palette__list">
-            <button class="field-palette__item" onclick="addField('heading')">
+            <button class="field-palette__item" draggable="true" data-field-type="heading" onclick="addField('heading')">
               <span class="field-palette__item-icon">📌</span> Heading
             </button>
-            <button class="field-palette__item" onclick="addField('paragraph')">
+            <button class="field-palette__item" draggable="true" data-field-type="paragraph" onclick="addField('paragraph')">
               <span class="field-palette__item-icon">¶</span> Paragraph
             </button>
-            <button class="field-palette__item" onclick="addField('divider')">
+            <button class="field-palette__item" draggable="true" data-field-type="divider" onclick="addField('divider')">
               <span class="field-palette__item-icon">―</span> Divider
             </button>
           </div>
@@ -101,7 +105,7 @@
             </div>
           </div>
           <div class="card__body">
-            <div id="fields-list" style="display: flex; flex-direction: column; gap: var(--space-3);">
+            <div id="fields-list" data-sortable data-sortable-handle=".drag-handle" style="display: flex; flex-direction: column; gap: var(--space-3);">
               <!-- Fields rendered here -->
             </div>
             <div id="empty-state" class="empty-state hidden">
@@ -137,8 +141,22 @@
 </div>
 
 <script>
-  const formId = __id__;
+  // Debug: what values are being passed from server
+  console.log('Template values:', {
+    id: '__id__',
+    recordId: '__recordId__',
+    slug: '__slug__',
+    title: '__title__'
+  });
+  
+  // Get form ID from template
+  const rawId = '__id__';
+  const formId = (rawId && rawId !== '' && /^\d+$/.test(rawId)) ? parseInt(rawId, 10) : null;
   const formSlug = '__slug__';
+  
+  if (!formId) {
+    console.error('formId is not set! Check template hydration.');
+  }
   let fields = [];
   let selectedFieldIndex = null;
 
@@ -181,18 +199,20 @@
     container.innerHTML = fields.map((field, index) => `
       <div 
         class="field-card ${selectedFieldIndex === index ? 'field-card--selected' : ''}" 
+        data-id="${field.id}"
+        data-index="${index}"
         onclick="selectField(${index})"
       >
-        <div class="field-card__drag">⠿</div>
+        <div class="field-card__drag drag-handle">⠿</div>
         <div class="field-card__content">
           <div class="field-card__header">
             <span class="field-card__icon">${icons[field.type] || '❓'}</span>
-            <span class="field-card__label">${field.label || 'Untitled'}</span>
+            <span class="field-card__label editable" data-field="label" data-index="${index}" onclick="event.stopPropagation(); makeEditable(this, ${index}, 'label')">${escapeHtml(field.label) || 'Untitled'}</span>
             ${field.required ? '<span class="badge badge--error" style="font-size: 0.625rem;">Required</span>' : ''}
             <span class="field-card__type">${field.type}</span>
           </div>
           <div class="field-card__preview">
-            ${renderFieldPreview(field)}
+            ${renderFieldPreview(field, index)}
           </div>
         </div>
         <div class="field-card__actions">
@@ -201,30 +221,105 @@
       </div>
     `).join('');
   }
+  
+  function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
 
-  function renderFieldPreview(field) {
+  function renderFieldPreview(field, index) {
     switch(field.type) {
       case 'text': case 'email': case 'number':
-        return `<input type="${field.type}" placeholder="${field.placeholder || ''}" disabled />`;
+        return `<div class="editable preview-placeholder" style="padding: 8px 12px; background: var(--color-gray-50); border: 1px solid var(--color-gray-200); border-radius: var(--radius-sm); color: var(--color-gray-400); font-size: 0.875rem;" onclick="event.stopPropagation(); makeEditable(this, ${index}, 'placeholder')">${escapeHtml(field.placeholder) || 'Enter placeholder text...'}</div>`;
       case 'textarea':
-        return `<textarea disabled placeholder="${field.placeholder || ''}" rows="2"></textarea>`;
+        const rowHeight = 24; // approx line height in pixels
+        const textareaHeight = (field.rows || 4) * rowHeight;
+        return `<div class="editable preview-placeholder" style="padding: 8px 12px; background: var(--color-gray-50); border: 1px solid var(--color-gray-200); border-radius: var(--radius-sm); color: var(--color-gray-400); font-size: 0.875rem; min-height: ${textareaHeight}px;" onclick="event.stopPropagation(); makeEditable(this, ${index}, 'placeholder')">${escapeHtml(field.placeholder) || 'Enter placeholder text...'}</div>`;
       case 'select':
-        return `<select disabled><option>${field.placeholder || 'Select...'}</option></select>`;
+        return `<div class="editable preview-placeholder" style="padding: 8px 12px; background: var(--color-gray-50); border: 1px solid var(--color-gray-200); border-radius: var(--radius-sm); color: var(--color-gray-400); font-size: 0.875rem;" onclick="event.stopPropagation(); makeEditable(this, ${index}, 'placeholder')">${escapeHtml(field.placeholder) || 'Select an option...'}</div>`;
       case 'checkbox':
-        return `<label style="display: flex; align-items: center; gap: 8px; color: var(--color-gray-400);"><input type="checkbox" disabled>${field.checkboxLabel || 'Checkbox'}</label>`;
+        return `<div class="editable" style="display: flex; align-items: center; gap: 8px; color: var(--color-gray-500);" onclick="event.stopPropagation(); makeEditable(this, ${index}, 'checkboxLabel')"><span style="pointer-events: none;">☐</span> ${escapeHtml(field.checkboxLabel) || 'Checkbox label'}</div>`;
       case 'date':
-        return `<input type="date" disabled />`;
+        const minDisplay = field.minDate || 'No min';
+        const maxDisplay = field.maxDate || 'No max';
+        return `
+          <div style="display: flex; align-items: center; gap: var(--space-2); padding: 8px 12px; background: var(--color-gray-50); border: 1px solid var(--color-gray-200); border-radius: var(--radius-sm);">
+            <span style="color: ${field.minDate ? 'var(--color-gray-700)' : 'var(--color-gray-400)'}; font-size: 0.875rem;">${minDisplay}</span>
+            <span style="color: var(--color-gray-400);">—</span>
+            <span style="color: ${field.maxDate ? 'var(--color-gray-700)' : 'var(--color-gray-400)'}; font-size: 0.875rem;">${maxDisplay}</span>
+          </div>`;
       case 'radio':
-        return `<span style="color: var(--color-gray-400); font-size: 0.8125rem;">${(field.options || []).length} options</span>`;
+        return `<span style="color: var(--color-gray-400); font-size: 0.8125rem;">${(field.options || []).length} options — click to edit in settings</span>`;
       case 'heading':
-        return `<div style="font-weight: 600; color: var(--color-gray-700);">${field.text || 'Heading'}</div>`;
+        return `<div class="editable" style="font-weight: 600; color: var(--color-gray-700);" onclick="event.stopPropagation(); makeEditable(this, ${index}, 'text')">${escapeHtml(field.text) || 'Heading'}</div>`;
       case 'paragraph':
-        return `<div style="color: var(--color-gray-500); font-size: 0.875rem;">${field.text || 'Paragraph text...'}</div>`;
+        return `<div class="editable" style="color: var(--color-gray-500); font-size: 0.875rem;" onclick="event.stopPropagation(); makeEditable(this, ${index}, 'text')">${escapeHtml(field.text) || 'Paragraph text...'}</div>`;
       case 'divider':
         return `<hr style="border: none; border-top: 1px solid var(--color-gray-200);" />`;
       default:
         return '';
     }
+  }
+
+  // Inline editing
+  function makeEditable(el, index, fieldName) {
+    // Don't double-init
+    if (el.contentEditable === 'true') return;
+    
+    // Also select the field to show settings panel
+    if (selectedFieldIndex !== index) {
+      selectedFieldIndex = index;
+      renderSettings();
+      // Re-highlight the selected card
+      document.querySelectorAll('.field-card').forEach((card, i) => {
+        card.classList.toggle('field-card--selected', i === index);
+      });
+      document.getElementById('settings-panel').classList.remove('hidden');
+      document.getElementById('settings-empty').classList.add('hidden');
+    }
+    
+    const originalValue = fields[index][fieldName] || '';
+    
+    el.contentEditable = 'true';
+    el.classList.add('editing');
+    el.focus();
+    
+    // Select all text
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    
+    function saveEdit() {
+      el.contentEditable = 'false';
+      el.classList.remove('editing');
+      
+      const newValue = el.textContent.trim();
+      if (newValue !== originalValue) {
+        fields[index][fieldName] = newValue || originalValue;
+        renderSettings(); // Update settings panel if open
+        saveFields();
+      }
+      
+      // Remove listeners
+      el.removeEventListener('blur', saveEdit);
+      el.removeEventListener('keydown', handleKey);
+    }
+    
+    function handleKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        el.blur();
+      }
+      if (e.key === 'Escape') {
+        el.textContent = originalValue;
+        el.blur();
+      }
+    }
+    
+    el.addEventListener('blur', saveEdit);
+    el.addEventListener('keydown', handleKey);
   }
 
   function addField(type) {
@@ -370,6 +465,28 @@
       `;
     }
     
+    // Date settings
+    if (field.type === 'date') {
+      html += `
+        <div class="form-group">
+          <label class="form-label">Min Date</label>
+          <input type="date" class="form-input" value="${field.minDate || ''}" onchange="updateField('minDate', this.value)">
+          <p class="form-hint">Leave empty for no minimum</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Max Date</label>
+          <input type="date" class="form-input" value="${field.maxDate || ''}" onchange="updateField('maxDate', this.value)">
+          <p class="form-hint">Leave empty for no maximum</p>
+        </div>
+        <div class="form-group">
+          <label class="form-check">
+            <input type="checkbox" ${field.defaultToday ? 'checked' : ''} onchange="updateField('defaultToday', this.checked)">
+            <span class="form-check__label">Default to today</span>
+          </label>
+        </div>
+      `;
+    }
+    
     // Required
     if (!['heading', 'paragraph', 'divider'].includes(field.type)) {
       html += `
@@ -391,6 +508,16 @@
       renderFields();
       saveFields();
     }
+  }
+  
+  // Update a specific field by index (for inline edits in preview)
+  function updateFieldDirect(index, prop, value) {
+    fields[index][prop] = value;
+    // Also update settings panel if this field is selected
+    if (selectedFieldIndex === index) {
+      renderSettings();
+    }
+    saveFields();
   }
 
   function addOption() {
@@ -428,45 +555,329 @@
     renderFields();
   }
 
-  function saveFields() {
-    fetch('/api/content/update', {
+  // Save indicator helpers
+  const saveIndicator = {
+    el: null,
+    timeout: null,
+    
+    init() {
+      this.el = document.getElementById('save-indicator');
+    },
+    
+    saving() {
+      if (!this.el) this.init();
+      clearTimeout(this.timeout);
+      this.el.querySelector('.save-indicator__icon').textContent = '↻';
+      this.el.querySelector('.save-indicator__text').textContent = 'Saving...';
+      this.el.className = 'save-indicator save-indicator--visible save-indicator--saving';
+    },
+    
+    saved() {
+      if (!this.el) this.init();
+      this.el.querySelector('.save-indicator__icon').textContent = '✓';
+      this.el.querySelector('.save-indicator__text').textContent = 'Saved';
+      this.el.className = 'save-indicator save-indicator--visible save-indicator--saved';
+      
+      clearTimeout(this.timeout);
+      this.timeout = setTimeout(() => {
+        this.el.classList.remove('save-indicator--visible');
+      }, 2000);
+    },
+    
+    error() {
+      if (!this.el) this.init();
+      this.el.querySelector('.save-indicator__icon').textContent = '✕';
+      this.el.querySelector('.save-indicator__text').textContent = 'Error';
+      this.el.className = 'save-indicator save-indicator--visible';
+      this.el.style.color = '#f87171';
+      
+      clearTimeout(this.timeout);
+      this.timeout = setTimeout(() => {
+        this.el.classList.remove('save-indicator--visible');
+        this.el.style.color = '';
+      }, 3000);
+    }
+  };
+
+  // Helper: make authenticated API call with prepare -> execute flow
+  async function apiUpdate(data) {
+    const headers = { 'Content-Type': 'application/json', 'X-API-Key': 'htx-bip-site-001', 'X-HTX-Version': '1' };
+    
+    // Step 1: Prepare (get token) - data must be in 'meta' object
+    const preparePayload = {
+      meta: {
+        type: 'form_definition',
+        action: 'update',
+        recordId: String(formId)
+      }
+    };
+    
+    const prepareRes = await fetch('/api/content/prepare', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': 'htx-bip-site-001', 'X-HTX-Version': '1' },
-      body: JSON.stringify({ 
-        recordId: formId, 
+      headers,
+      body: JSON.stringify(preparePayload)
+    });
+    
+    if (!prepareRes.ok) throw new Error('Prepare failed');
+    const prepareData = await prepareRes.json();
+    
+    // Extract token from payload
+    const payloadStr = prepareData.data?.payload || '{}';
+    const payloadObj = JSON.parse(payloadStr);
+    const token = payloadObj['htx-token'];
+    const context = payloadObj['htx-context'];
+    
+    if (!token) throw new Error('No token received');
+    
+    // Step 2: Execute update
+    const updatePayload = {
+      'htx-recordId': formId,
+      'htx-token': token,
+      'htx-context': context,
+      ...data
+    };
+    
+    const updateRes = await fetch('/api/content/update', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(updatePayload)
+    });
+    
+    return updateRes;
+  }
+
+  async function saveFields() {
+    saveIndicator.saving();
+    try {
+      const res = await apiUpdate({
         fields: JSON.stringify(fields), 
         field_count: fields.filter(f => !['heading', 'paragraph', 'divider'].includes(f.type)).length.toString() 
-      })
-    });
+      });
+      if (res.ok) saveIndicator.saved();
+      else saveIndicator.error();
+    } catch (e) {
+      console.error('Save error:', e);
+      saveIndicator.error();
+    }
   }
 
-  function updateTitle() {
-    const title = document.getElementById('form-title').value;
-    fetch('/api/content/update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': 'htx-bip-site-001', 'X-HTX-Version': '1' },
-      body: JSON.stringify({ recordId: formId, title: title })
-    });
+  async function updateTitle() {
+    saveIndicator.saving();
+    try {
+      const title = document.getElementById('form-title').value;
+      const res = await apiUpdate({ title });
+      if (res.ok) saveIndicator.saved();
+      else saveIndicator.error();
+    } catch (e) {
+      saveIndicator.error();
+    }
   }
 
-  function updateSettings() {
-    const submitText = document.getElementById('submit-text').value;
-    fetch('/api/content/update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': 'htx-bip-site-001', 'X-HTX-Version': '1' },
-      body: JSON.stringify({ recordId: formId, submit_text: submitText })
-    });
+  async function updateSettings() {
+    saveIndicator.saving();
+    try {
+      const submitText = document.getElementById('submit-text').value;
+      const res = await apiUpdate({ submit_text: submitText });
+      if (res.ok) saveIndicator.saved();
+      else saveIndicator.error();
+    } catch (e) {
+      saveIndicator.error();
+    }
   }
 
-  function toggleActive(checked) {
-    fetch('/api/content/update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': 'htx-bip-site-001', 'X-HTX-Version': '1' },
-      body: JSON.stringify({ recordId: formId, active: checked ? 'true' : 'false' })
+  async function toggleActive(checked) {
+    saveIndicator.saving();
+    try {
+      const res = await apiUpdate({ active: checked ? 'true' : 'false' });
+      if (res.ok) saveIndicator.saved();
+      else saveIndicator.error();
+    } catch (e) {
+      saveIndicator.error();
+    }
+  }
+
+  // Handle drag-and-drop reordering
+  function initSortable() {
+    const container = document.getElementById('fields-list');
+    
+    container.addEventListener('sortable:end', (e) => {
+      const { order } = e.detail;
+      
+      // Reorder fields array based on new order
+      const newFields = [];
+      order.forEach(id => {
+        const field = fields.find(f => f.id === id);
+        if (field) newFields.push(field);
+      });
+      
+      // Update fields and save
+      fields = newFields;
+      selectedFieldIndex = null;
+      closeSettings();
+      saveFields();
     });
+  }
+  
+  // Handle drag from palette into fields list
+  function initPaletteDrag() {
+    const palette = document.querySelector('.field-palette');
+    const dropZone = document.getElementById('fields-list');
+    const emptyState = document.getElementById('empty-state');
+    let draggedType = null;
+    let dropIndicator = null;
+    
+    // Create drop indicator element
+    function createDropIndicator() {
+      const el = document.createElement('div');
+      el.className = 'drop-indicator';
+      el.style.cssText = 'height: 4px; background: var(--color-navy); border-radius: 2px; margin: 4px 0; transition: opacity 0.15s;';
+      return el;
+    }
+    
+    // Palette item drag start
+    palette.addEventListener('dragstart', (e) => {
+      const item = e.target.closest('[data-field-type]');
+      if (!item) return;
+      
+      draggedType = item.dataset.fieldType;
+      e.dataTransfer.effectAllowed = 'copy';
+      e.dataTransfer.setData('text/plain', draggedType);
+      
+      item.style.opacity = '0.5';
+      dropZone.classList.add('drop-zone-active');
+      
+      // Create indicator
+      dropIndicator = createDropIndicator();
+    });
+    
+    palette.addEventListener('dragend', (e) => {
+      const item = e.target.closest('[data-field-type]');
+      if (item) item.style.opacity = '';
+      
+      dropZone.classList.remove('drop-zone-active');
+      if (dropIndicator && dropIndicator.parentNode) {
+        dropIndicator.remove();
+      }
+      draggedType = null;
+      dropIndicator = null;
+    });
+    
+    // Drop zone events
+    dropZone.addEventListener('dragover', (e) => {
+      if (!draggedType) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      
+      // Find insert position
+      const fieldCards = Array.from(dropZone.querySelectorAll('.field-card'));
+      let insertBefore = null;
+      
+      for (const card of fieldCards) {
+        const rect = card.getBoundingClientRect();
+        if (e.clientY < rect.top + rect.height / 2) {
+          insertBefore = card;
+          break;
+        }
+      }
+      
+      // Position indicator
+      if (dropIndicator) {
+        if (insertBefore) {
+          dropZone.insertBefore(dropIndicator, insertBefore);
+        } else {
+          dropZone.appendChild(dropIndicator);
+        }
+      }
+    });
+    
+    dropZone.addEventListener('dragleave', (e) => {
+      // Only hide if actually leaving the drop zone
+      if (!dropZone.contains(e.relatedTarget)) {
+        if (dropIndicator && dropIndicator.parentNode) {
+          dropIndicator.remove();
+        }
+      }
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+      if (!draggedType) return;
+      e.preventDefault();
+      
+      // Find insert index
+      const fieldCards = Array.from(dropZone.querySelectorAll('.field-card'));
+      let insertIndex = fields.length;
+      
+      for (let i = 0; i < fieldCards.length; i++) {
+        const rect = fieldCards[i].getBoundingClientRect();
+        if (e.clientY < rect.top + rect.height / 2) {
+          insertIndex = i;
+          break;
+        }
+      }
+      
+      // Clean up indicator
+      if (dropIndicator && dropIndicator.parentNode) {
+        dropIndicator.remove();
+      }
+      
+      // Add field at position
+      addFieldAt(draggedType, insertIndex);
+    });
+    
+    // Also make empty state a drop target
+    emptyState.addEventListener('dragover', (e) => {
+      if (!draggedType) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      emptyState.style.background = 'var(--color-gray-100)';
+    });
+    
+    emptyState.addEventListener('dragleave', (e) => {
+      emptyState.style.background = '';
+    });
+    
+    emptyState.addEventListener('drop', (e) => {
+      if (!draggedType) return;
+      e.preventDefault();
+      emptyState.style.background = '';
+      addFieldAt(draggedType, 0);
+    });
+  }
+  
+  // Add field at specific index
+  function addFieldAt(type, index) {
+    const id = 'field_' + Date.now();
+    const newField = { id, type, label: getDefaultLabel(type), required: false };
+    
+    if (type === 'select' || type === 'radio') {
+      newField.options = [{ value: 'option1', label: 'Option 1' }, { value: 'option2', label: 'Option 2' }];
+    }
+    if (type === 'checkbox') newField.checkboxLabel = 'I agree';
+    if (type === 'heading') newField.text = 'Section Title';
+    if (type === 'paragraph') newField.text = 'Add descriptive text here...';
+    if (type === 'textarea') newField.rows = 4;
+    
+    // Insert at index
+    fields.splice(index, 0, newField);
+    selectedFieldIndex = index;
+    renderFields();
+    renderSettings();
+    saveFields();
   }
 
   // Initial render
   renderFields();
+  
+  // Init drag-and-drop after DOM is ready
+  function initDragDrop() {
+    initSortable();
+    initPaletteDrag();
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDragDrop);
+  } else {
+    setTimeout(initDragDrop, 100);
+  }
 </script>
 </htx>

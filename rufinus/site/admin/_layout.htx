@@ -10,5 +10,6 @@
 <body>
 __content__
 <script src="/public/js/admin.js"></script>
+<script src="/public/js/sortable.js"></script>
 </body>
 </html>

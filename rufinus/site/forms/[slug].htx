@@ -1,0 +1,463 @@
+<htx:type>form_definition</htx:type>
+<htx:status>published</htx:status>
+
+<htx>
+<div class="form-page">
+  <div class="form-container">
+    
+    <!-- Header -->
+    <div class="form-header">
+      <h1>__title__</h1>
+    </div>
+    
+    <!-- Success Message -->
+    <div id="success-message" class="success-message hidden">
+      <div class="success-icon">✓</div>
+      <h2>Submitted</h2>
+      <p>Your response has been recorded.</p>
+      <button onclick="resetForm()" class="btn btn-secondary">Submit Another</button>
+    </div>
+
+    <!-- Form -->
+    <form id="dynamic-form" class="form-body">
+      <div id="form-fields"></div>
+      
+      <div class="form-footer">
+        <button type="submit" id="submit-btn" class="btn btn-primary">
+          <span id="submit-text">Submit</span>
+          <span id="submit-spinner" class="spinner hidden"></span>
+        </button>
+      </div>
+
+      <div id="form-error" class="error-banner hidden">
+        <span class="error-icon">!</span>
+        Please complete all required fields
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<style>
+  .form-page {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #f8f8f8 0%, #f0f0f0 100%);
+    padding: 3rem 1rem;
+  }
+  
+  .form-container {
+    max-width: 540px;
+    margin: 0 auto;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  
+  .form-header {
+    background: #1a1a2e;
+    padding: 1.5rem 2rem;
+  }
+  
+  .form-header h1 {
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  
+  .form-body {
+    padding: 2rem;
+  }
+  
+  #form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .form-field {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .form-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  
+  .form-label .required {
+    color: #c53030;
+    margin-left: 0.25rem;
+  }
+  
+  .form-input {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 2px solid #e2e2e2;
+    background: #fafafa;
+    font-size: 1rem;
+    color: #1a1a2e;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  
+  .form-input:focus {
+    outline: none;
+    border-color: #1a1a2e;
+    background: #fff;
+  }
+  
+  .form-input::placeholder {
+    color: #999;
+  }
+  
+  .form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%231a1a2e' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+    cursor: pointer;
+  }
+  
+  textarea.form-input {
+    resize: vertical;
+    min-height: 120px;
+  }
+  
+  .radio-group, .checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .radio-option, .checkbox-option {
+    display: flex;
+    align-items: center;
+    padding: 0.875rem 1rem;
+    border: 2px solid #e2e2e2;
+    background: #fafafa;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  
+  .radio-option:hover, .checkbox-option:hover {
+    border-color: #ccc;
+  }
+  
+  .radio-option input, .checkbox-option input {
+    margin-right: 0.75rem;
+    width: 1.125rem;
+    height: 1.125rem;
+    accent-color: #1a1a2e;
+  }
+  
+  .radio-option:has(input:checked), .checkbox-option:has(input:checked) {
+    border-color: #1a1a2e;
+    background: #f5f5f7;
+  }
+  
+  .field-error {
+    font-size: 0.8125rem;
+    color: #c53030;
+    margin-top: 0.5rem;
+    font-weight: 500;
+  }
+  
+  .section-heading {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 1rem 0 0.5rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #1a1a2e;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  
+  .section-paragraph {
+    color: #555;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+  
+  .section-divider {
+    border: none;
+    height: 2px;
+    background: #e2e2e2;
+    margin: 1rem 0;
+  }
+  
+  .form-footer {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #e2e2e2;
+  }
+  
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  
+  .btn-primary {
+    width: 100%;
+    background: #1a1a2e;
+    color: #fff;
+  }
+  
+  .btn-primary:hover {
+    background: #2d2d44;
+  }
+  
+  .btn-primary:active {
+    transform: translateY(1px);
+  }
+  
+  .btn-secondary {
+    background: #e2e2e2;
+    color: #1a1a2e;
+  }
+  
+  .btn-secondary:hover {
+    background: #d5d5d5;
+  }
+  
+  .spinner {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 0.75rem;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  .error-banner {
+    display: flex;
+    align-items: center;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: #fef2f2;
+    border-left: 4px solid #c53030;
+    color: #c53030;
+    font-weight: 500;
+  }
+  
+  .error-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: #c53030;
+    color: #fff;
+    font-weight: 700;
+    margin-right: 0.75rem;
+  }
+  
+  .success-message {
+    padding: 3rem 2rem;
+    text-align: center;
+  }
+  
+  .success-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    background: #1a1a2e;
+    color: #fff;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+  }
+  
+  .success-message h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 0.5rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  
+  .success-message p {
+    color: #555;
+    margin: 0 0 1.5rem 0;
+  }
+  
+  .hidden {
+    display: none !important;
+  }
+</style>
+
+<script>
+  let fields = [];
+  try {
+    const rawFields = '__fields__';
+    if (rawFields && rawFields !== '' && rawFields !== 'undefined') {
+      fields = JSON.parse(rawFields.replace(/&quot;/g, '"')) || [];
+    }
+  } catch(e) { fields = []; }
+
+  const formId = __id__;
+  const formSlug = '__slug__';
+  
+  const submitTextVal = '__submit_text__';
+  if (submitTextVal && submitTextVal !== '' && submitTextVal !== 'undefined') {
+    document.getElementById('submit-text').textContent = submitTextVal;
+  }
+
+  function renderForm() {
+    const container = document.getElementById('form-fields');
+    
+    container.innerHTML = fields.map(field => {
+      if (field.type === 'heading') return `<h2 class="section-heading">${field.text || ''}</h2>`;
+      if (field.type === 'paragraph') return `<p class="section-paragraph">${field.text || ''}</p>`;
+      if (field.type === 'divider') return `<hr class="section-divider" />`;
+      
+      return `
+        <div class="form-field" data-field-id="${field.id}">
+          <label class="form-label">
+            ${field.label || ''}${field.required ? '<span class="required">*</span>' : ''}
+          </label>
+          ${renderInput(field)}
+          <div class="field-error hidden"></div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderInput(field) {
+    const req = field.required ? 'required' : '';
+    const ph = field.placeholder || '';
+    
+    switch(field.type) {
+      case 'text': 
+        return `<input type="text" name="${field.id}" ${req} placeholder="${ph}" class="form-input" />`;
+      case 'email': 
+        return `<input type="email" name="${field.id}" ${req} placeholder="${ph}" class="form-input" />`;
+      case 'number': 
+        return `<input type="number" name="${field.id}" ${req} placeholder="${ph}" ${field.min !== undefined ? `min="${field.min}"` : ''} ${field.max !== undefined ? `max="${field.max}"` : ''} class="form-input" />`;
+      case 'textarea': 
+        return `<textarea name="${field.id}" ${req} placeholder="${ph}" rows="${field.rows || 4}" class="form-input"></textarea>`;
+      case 'select': 
+        return `<select name="${field.id}" ${req} class="form-input form-select"><option value="">${ph || 'Select...'}</option>${(field.options || []).map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('')}</select>`;
+      case 'radio': 
+        return `<div class="radio-group">${(field.options || []).map(opt => `<label class="radio-option"><input type="radio" name="${field.id}" value="${opt.value}" ${req} /><span>${opt.label}</span></label>`).join('')}</div>`;
+      case 'checkbox': 
+        return `<label class="checkbox-option"><input type="checkbox" name="${field.id}" value="true" ${req} /><span>${field.checkboxLabel || ''}</span></label>`;
+      case 'date': 
+        return `<input type="date" name="${field.id}" ${req} class="form-input" />`;
+      default: 
+        return '';
+    }
+  }
+
+  document.getElementById('dynamic-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    document.querySelectorAll('.field-error').forEach(el => el.classList.add('hidden'));
+    document.getElementById('form-error').classList.add('hidden');
+    
+    const formData = new FormData(this);
+    const data = {};
+    for (let [key, value] of formData.entries()) data[key] = value;
+    
+    let hasErrors = false;
+    fields.forEach(field => {
+      if (field.required && !['heading', 'paragraph', 'divider'].includes(field.type)) {
+        const value = data[field.id];
+        if (!value || value.trim() === '') {
+          hasErrors = true;
+          const errorEl = document.querySelector(`[data-field-id="${field.id}"] .field-error`);
+          if (errorEl) { errorEl.textContent = 'Required'; errorEl.classList.remove('hidden'); }
+        }
+      }
+    });
+    
+    if (hasErrors) { document.getElementById('form-error').classList.remove('hidden'); return; }
+    
+    document.getElementById('submit-btn').disabled = true;
+    document.getElementById('submit-spinner').classList.remove('hidden');
+    
+    try {
+      const payload = {
+        type: 'form_submission',
+        title: 'Submission - ' + new Date().toISOString(),
+        slug: 'submission-' + Date.now(),
+        status: 'published',
+        action: 'save',
+        form_id: formId.toString(),
+        form_slug: formSlug,
+        data: JSON.stringify(data),
+        submitted_at: new Date().toISOString()
+      };
+      
+      // Phase 1: Prepare (get token)
+      const prepareRes = await fetch('/api/content/prepare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': 'htx-bip-site-001', 'X-HTX-Version': '1' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!prepareRes.ok) throw new Error('Prepare failed');
+      const prepareData = await prepareRes.json();
+      const payloadStr = prepareData.data?.payload || '{}';
+      const payloadObj = JSON.parse(payloadStr);
+      const token = payloadObj['htx-token'];
+      
+      // Phase 2: Save with token (token goes in body, not header)
+      payload['htx-token'] = token;
+      payload['htx-context'] = 'save';
+      payload['htx-recordId'] = null;
+      
+      const saveRes = await fetch('/api/content/save', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'X-API-Key': 'htx-bip-site-001', 
+          'X-HTX-Version': '1'
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (saveRes.ok) {
+        document.getElementById('dynamic-form').classList.add('hidden');
+        document.getElementById('success-message').classList.remove('hidden');
+      } else { throw new Error('Save failed'); }
+    } catch (err) {
+      console.error(err);
+      alert('Error submitting form. Please try again.');
+    } finally {
+      document.getElementById('submit-btn').disabled = false;
+      document.getElementById('submit-spinner').classList.add('hidden');
+    }
+  });
+
+  function resetForm() {
+    document.getElementById('dynamic-form').reset();
+    document.getElementById('dynamic-form').classList.remove('hidden');
+    document.getElementById('success-message').classList.add('hidden');
+  }
+
+  renderForm();
+</script>
+</htx>
