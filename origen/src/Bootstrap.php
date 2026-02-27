@@ -12,6 +12,7 @@ use Origen\Http\Controllers\ContentController;
 use Origen\Http\Controllers\ContentTypeController;
 use Origen\Http\Controllers\AuthController;
 use Origen\Http\Controllers\StatusController;
+use Origen\Http\Controllers\PreviewController;
 use Origen\Services\AuthTokenService;
 use Origen\Services\ActionTokenService;
 use Origen\Services\ReplayGuardService;
@@ -164,6 +165,10 @@ class Bootstrap
         $router->get('/', [StatusController::class, 'dashboard'], $dashboardMiddleware);
         $router->post('/', [StatusController::class, 'login'], $dashboardMiddleware);
         $router->get('/logout', [StatusController::class, 'logout'], $dashboardMiddleware);
+
+        // Preview routes
+        $router->post('/api/preview', [PreviewController::class, 'preview'], $tenantMiddleware);
+        $router->get('/api/preview/status/{content_type}', [PreviewController::class, 'status'], $tenantMiddleware);
 
         // Health check
         $router->get('/api/health', fn() => \Origen\Http\Response::json(['status' => 'ok']), []);
