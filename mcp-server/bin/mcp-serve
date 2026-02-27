@@ -83,7 +83,7 @@ if ($configPath && file_exists($configPath)) {
 
 // Merge with defaults
 $config = array_merge([
-    'origen_url' => getenv('ORIGEN_URL') ?: 'http://localhost:8082',
+    'origen_url' => getenv('ORIGEN_URL') ?: 'http://localhost:8080',
     'site_key' => getenv('SITE_KEY') ?: 'htx-default-key',
     'audit_log' => null,
 ], $config);

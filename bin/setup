@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+# Colors (disabled when not a terminal)
+if [ -t 1 ]; then
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    RED='\033[0;31m'
+    NC='\033[0m'
+else
+    GREEN='' YELLOW='' RED='' NC=''
+fi
+
+ok()   { printf "${GREEN}[OK]${NC} %s\n" "$1"; }
+warn() { printf "${YELLOW}[WARN]${NC} %s\n" "$1"; }
+fail() { printf "${RED}[FAIL]${NC} %s\n" "$1"; exit 1; }
+
+echo "=== Hypermedia CMS Setup ==="
+echo ""
+
+# --- Prerequisites ---
+
+printf "Checking PHP 8.2+ ... "
+if ! command -v php &>/dev/null; then
+    fail "php not found in PATH"
+fi
+PHP_VERSION=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
+PHP_MAJOR=$(php -r 'echo PHP_MAJOR_VERSION;')
+PHP_MINOR=$(php -r 'echo PHP_MINOR_VERSION;')
+if [ "$PHP_MAJOR" -lt 8 ] || { [ "$PHP_MAJOR" -eq 8 ] && [ "$PHP_MINOR" -lt 2 ]; }; then
+    fail "PHP $PHP_VERSION found, 8.2+ required"
+fi
+ok "PHP $PHP_VERSION"
+
+printf "Checking Composer ... "
+if ! command -v composer &>/dev/null; then
+    fail "composer not found in PATH"
+fi
+ok "$(composer --version 2>/dev/null | head -1)"
+
+printf "Checking ext-pdo_sqlite ... "
+if ! php -m 2>/dev/null | grep -qi pdo_sqlite; then
+    fail "ext-pdo_sqlite not loaded"
+fi
+ok "loaded"
+
+echo ""
+
+# --- Dependencies ---
+
+printf "Installing root dependencies ... "
+if [ -f vendor/autoload.php ]; then
+    ok "already installed"
+else
+    composer install --no-interaction --quiet 2>&1
+    ok "done"
+fi
+
+printf "Installing mcp-server dependencies ... "
+if [ -f mcp-server/vendor/autoload.php ]; then
+    ok "already installed"
+else
+    composer install --no-interaction --quiet --working-dir=mcp-server 2>&1
+    ok "done"
+fi
+
+echo ""
+
+# --- Environment ---
+
+printf "Setting up .env ... "
+if [ -f .env ]; then
+    ok "already exists"
+else
+    cp .env.example .env
+    APP_KEY=$(php -r 'echo bin2hex(random_bytes(32));')
+    sed -i "s/^APP_KEY=.*/APP_KEY=$APP_KEY/" .env
+    ok "created with random APP_KEY"
+fi
+
+echo ""
+
+# --- Storage directories ---
+
+printf "Ensuring storage directories ... "
+mkdir -p storage/index storage/logs
+ok "storage/index/ storage/logs/"
+
+echo ""
+
+# --- Index rebuild ---
+
+printf "Rebuilding content index ... "
+php hcms index:rebuild 2>&1 | tail -1
+ok "index rebuilt"
+
+echo ""
+
+# --- Summary ---
+
+echo "=== Setup Complete ==="
+echo ""
+echo "Next steps:"
+echo "  1. Start servers:     php hcms serve:all"
+echo "  2. Health check:      curl -s http://localhost:8080/api/health"
+echo "  3. Create a user:     php hcms user:create --name=Admin --email=admin@test.com --password=secret --site=starter --role=super_admin"
+echo "  4. MCP config:        cp .mcp.json.example .mcp.json"
+echo ""

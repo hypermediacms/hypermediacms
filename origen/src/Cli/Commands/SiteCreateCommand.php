@@ -2,6 +2,7 @@
 
 namespace Origen\Cli\Commands;
 
+use Origen\Cli\ArgParser;
 use Origen\Cli\CommandInterface;
 use Origen\Container;
 use Origen\Storage\Database\SiteRepository;
@@ -24,12 +25,14 @@ class SiteCreateCommand implements CommandInterface
         $siteConfigManager = $container->make(SiteConfigManager::class);
         $siteRepo = $container->make(SiteRepository::class);
 
+        $parser = new ArgParser($args);
+
         echo "Create a new site\n";
         echo "-----------------\n";
 
-        $name = $this->prompt('Site name: ');
-        $slug = $this->prompt('Slug (e.g. marketing): ');
-        $domain = $this->prompt('Domain (e.g. marketing.example.com): ');
+        $name = $parser->get('name') ?? $this->prompt('Site name: ');
+        $slug = $parser->get('slug') ?? $this->prompt('Slug (e.g. marketing): ');
+        $domain = $parser->get('domain') ?? $this->prompt('Domain (e.g. marketing.example.com): ');
 
         if (!$name || !$slug || !$domain) {
             echo "Error: All fields are required.\n";

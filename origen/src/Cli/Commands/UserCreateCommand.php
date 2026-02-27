@@ -2,6 +2,7 @@
 
 namespace Origen\Cli\Commands;
 
+use Origen\Cli\ArgParser;
 use Origen\Cli\CommandInterface;
 use Origen\Container;
 use Origen\Storage\Database\SiteRepository;
@@ -24,13 +25,14 @@ class UserCreateCommand implements CommandInterface
         $userRepo = $container->make(UserRepository::class);
         $siteRepo = $container->make(SiteRepository::class);
 
-        // Interactive prompts
+        $parser = new ArgParser($args);
+
         echo "Create a new user\n";
         echo "-----------------\n";
 
-        $name = $this->prompt('Name: ');
-        $email = $this->prompt('Email: ');
-        $password = $this->prompt('Password: ');
+        $name = $parser->get('name') ?? $this->prompt('Name: ');
+        $email = $parser->get('email') ?? $this->prompt('Email: ');
+        $password = $parser->get('password') ?? $this->prompt('Password: ');
 
         if (!$name || !$email || !$password) {
             echo "Error: All fields are required.\n";
@@ -48,28 +50,44 @@ class UserCreateCommand implements CommandInterface
             echo "User created (id={$user['id']}).\n";
         }
 
-        // List available sites
-        $sites = $siteRepo->all();
-        if (empty($sites)) {
-            echo "No sites available. Create a site first with: php hcms site:create\n";
-            return 0;
-        }
+        // Resolve site from --site flag (slug or numeric ID) or interactive prompt
+        $siteArg = $parser->get('site');
+        if ($siteArg !== null) {
+            if (ctype_digit($siteArg)) {
+                $site = $siteRepo->findById((int) $siteArg);
+            } else {
+                $site = $siteRepo->findBySlug($siteArg);
+            }
+            if (!$site) {
+                echo "Site not found: {$siteArg}\n";
+                return 1;
+            }
+            $siteId = (int) $site['id'];
+        } else {
+            $sites = $siteRepo->all();
+            if (empty($sites)) {
+                echo "No sites available. Create a site first with: php hcms site:create\n";
+                return 0;
+            }
 
-        echo "\nAvailable sites:\n";
-        foreach ($sites as $site) {
-            echo "  [{$site['id']}] {$site['name']} ({$site['slug']})\n";
-        }
+            echo "\nAvailable sites:\n";
+            foreach ($sites as $s) {
+                echo "  [{$s['id']}] {$s['name']} ({$s['slug']})\n";
+            }
 
-        $siteId = (int) $this->prompt('Site ID to add membership: ');
-        $site = $siteRepo->findById($siteId);
-        if (!$site) {
-            echo "Site not found.\n";
-            return 1;
+            $siteId = (int) $this->prompt('Site ID to add membership: ');
+            $site = $siteRepo->findById($siteId);
+            if (!$site) {
+                echo "Site not found.\n";
+                return 1;
+            }
         }
 
         $roles = ['super_admin', 'tenant_admin', 'editor', 'author', 'viewer'];
-        echo "Roles: " . implode(', ', $roles) . "\n";
-        $role = $this->prompt('Role [editor]: ') ?: 'editor';
+        $role = $parser->get('role') ?? $this->prompt('Role [editor]: ') ?: 'editor';
+        if (!$role) {
+            $role = 'editor';
+        }
 
         if (!in_array($role, $roles)) {
             echo "Invalid role.\n";

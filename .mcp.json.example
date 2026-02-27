@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "hypermediacms": {
+      "type": "stdio",
+      "command": "php",
+      "args": ["./mcp-server/bin/mcp-serve", "./rufinus/site"],
+      "env": {
+        "ORIGEN_URL": "http://localhost:8080",
+        "SITE_KEY": "htx-starter-key-001"
+      }
+    }
+  }
+}

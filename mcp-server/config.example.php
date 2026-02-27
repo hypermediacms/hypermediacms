@@ -8,7 +8,7 @@
 
 return [
     // Origen API URL (for content operations)
-    'origen_url' => getenv('ORIGEN_URL') ?: 'http://localhost:8082',
+    'origen_url' => getenv('ORIGEN_URL') ?: 'http://localhost:8080',
 
     // Site API key (must match _site.yaml)
     'site_key' => getenv('SITE_KEY') ?: 'htx-default-key',
