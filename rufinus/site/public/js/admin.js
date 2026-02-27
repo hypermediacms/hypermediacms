@@ -79,6 +79,62 @@ function debounce(fn, wait) {
   };
 }
 
+/* ApiClient — Two-phase prepare → execute for all mutations */
+const ApiClient = {
+  async _execute(action, type, recordId, data, responseTemplates) {
+    var headers = { 'Content-Type': 'application/json' };
+
+    // Phase 1: Prepare — get signed action token
+    var prepareBody = {
+      meta: { action: action, type: type },
+      responseTemplates: responseTemplates || []
+    };
+    if (recordId) prepareBody.meta.recordId = String(recordId);
+    if (data) prepareBody.meta = Object.assign(prepareBody.meta, { data: data });
+
+    var prepareRes = await fetch('/api/content/prepare', {
+      method: 'POST', headers: headers, body: JSON.stringify(prepareBody)
+    });
+    if (!prepareRes.ok) {
+      var err = await prepareRes.json();
+      throw new Error(err.error || 'Prepare failed');
+    }
+    var prepareData = await prepareRes.json();
+    var payload = JSON.parse(prepareData.data && prepareData.data.payload ? prepareData.data.payload : '{}');
+    var token = payload['htx-token'];
+    if (!token) throw new Error('No action token received');
+
+    // Phase 2: Execute — send mutation with signed token
+    var executeBody = { 'htx-context': action, 'htx-token': token };
+    if (recordId) executeBody['htx-recordId'] = String(recordId);
+    if (data) Object.assign(executeBody, data);
+
+    var endpoint = action === 'delete' ? '/api/content/delete'
+                 : action === 'save' ? '/api/content/save'
+                 : '/api/content/update';
+
+    var res = await fetch(endpoint, {
+      method: 'POST', headers: headers, body: JSON.stringify(executeBody)
+    });
+    if (!res.ok) {
+      var errData = await res.json();
+      throw new Error(errData.error || action + ' failed');
+    }
+    return res.json();
+  },
+
+  save(type, data, responseTemplates) {
+    return this._execute('save', type, null, data, responseTemplates);
+  },
+  update(type, recordId, data, responseTemplates) {
+    return this._execute('update', type, recordId, data, responseTemplates);
+  },
+  delete(type, recordId) {
+    return this._execute('delete', type, recordId, null, []);
+  }
+};
+window.ApiClient = ApiClient;
+
 /* Sortable List (Drag & Drop) */
 Components.sortable = {
   init(el) {
