@@ -1,0 +1,44 @@
+<htx:type>thought</htx:type>
+<htx:howmany>50</htx:howmany>
+
+<htx>
+  <div class="admin-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h1>Thoughts</h1>
+    <a href="/admin/thoughts/new" hx-get="/admin/thoughts/new" hx-target=".admin-main" hx-push-url="true" class="btn btn-primary">
+      + New thought
+    </a>
+  </div>
+
+  <div class="admin-card">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Status</th>
+          <th>Updated</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <htx:each>
+          <tr>
+            <td>
+              <a href="/admin/thoughts/__id__" hx-get="/admin/thoughts/__id__" hx-target=".admin-main" hx-push-url="true">
+                __title__
+              </a>
+            </td>
+            <td><span class="status-badge status-__status__">__status__</span></td>
+            <td>{{ time_ago(updated_at) }}</td>
+            <td>
+              <a href="/admin/thoughts/__id__" hx-get="/admin/thoughts/__id__" hx-target=".admin-main" hx-push-url="true" class="btn btn-sm">Edit</a>
+            </td>
+          </tr>
+        </htx:each>
+      </tbody>
+    </table>
+
+    <htx:none>
+      <p style="padding: 2rem; text-align: center; color: #666;">No thoughts yet.</p>
+    </htx:none>
+  </div>
+</htx>

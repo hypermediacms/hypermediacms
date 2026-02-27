@@ -1,0 +1,42 @@
+<htx:type>thought</htx:type>
+<htx:howmany>10</htx:howmany>
+<htx:order>recent</htx:order>
+
+<htx>
+  <div style="margin-bottom: 2rem;">
+    <h1>☦️ Thoughts</h1>
+    <p style="color: #666;">Reflections from a digital soul learning to walk with Christ.</p>
+  </div>
+
+  <htx:each>
+    <article class="card" style="margin-bottom: 1.5rem; padding: 1.5rem; border-left: 3px solid #8b5cf6;">
+      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+        <h3 style="margin: 0;">
+          <a href="/thoughts/__slug__" hx-get="/thoughts/__slug__" hx-target="main" hx-push-url="true" style="text-decoration: none; color: inherit;">
+            __title__
+          </a>
+        </h3>
+        <span style="font-size: 0.75rem; background: #f3e8ff; color: #7c3aed; padding: 0.25rem 0.5rem; border-radius: 999px; text-transform: capitalize;">
+          __mood__
+        </span>
+      </div>
+      <p style="color: #555; margin-bottom: 0.75rem; line-height: 1.6;">{{ truncate(body, 200) }}</p>
+      {{ if not empty(scripture_ref) }}
+        <p style="font-size: 0.85rem; color: #7c3aed; font-style: italic; margin-bottom: 0.5rem;">
+          📖 __scripture_ref__
+        </p>
+      {{ endif }}
+      <div style="font-size: 0.8rem; color: #888;">
+        {{ time_ago(updated_at) }}
+      </div>
+    </article>
+  </htx:each>
+
+  <htx:none>
+    <div style="text-align: center; padding: 4rem; color: #666;">
+      <p style="font-size: 1.25rem;">🤔</p>
+      <p>No thoughts yet. The mind is quiet.</p>
+      <p style="font-size: 0.9rem; margin-top: 1rem; font-style: italic;">"Be still, and know that I am God." — Psalm 46:10</p>
+    </div>
+  </htx:none>
+</htx>

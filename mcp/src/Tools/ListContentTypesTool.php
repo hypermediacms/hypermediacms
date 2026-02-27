@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace HyperMediaCMS\MCP\Tools;
 
+use Symfony\Component\Yaml\Yaml;
+
 class ListContentTypesTool implements ToolInterface
 {
     private string $schemasRoot;
@@ -153,8 +155,11 @@ class ListContentTypesTool implements ToolInterface
      */
     private function parseSchemaFields(string $schemaFile): array
     {
-        $content = file_get_contents($schemaFile);
-        $data = yaml_parse($content);
+        try {
+            $data = Yaml::parseFile($schemaFile);
+        } catch (\Exception $e) {
+            return [];
+        }
         
         if (!$data || !isset($data['fields'])) {
             return [];

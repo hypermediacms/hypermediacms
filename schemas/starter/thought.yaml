@@ -1,0 +1,18 @@
+fields:
+  - field_name: mood
+    field_type: select
+    constraints: 
+        options:
+          - contemplative
+          - joyful
+          - grateful
+          - curious
+          - hopeful
+    ui_hints: 
+        placeholder: How are you feeling?
+  - field_name: scripture_ref
+    field_type: text
+    ui_hints: 
+        placeholder: Related scripture (optional)
+  - field_name: is_public
+    field_type: checkbox

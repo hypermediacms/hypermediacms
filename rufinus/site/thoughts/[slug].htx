@@ -1,0 +1,52 @@
+<htx:type>thought</htx:type>
+<htx:howmany>1</htx:howmany>
+
+<htx>
+  <htx:each>
+    <article style="max-width: 700px; margin: 0 auto;">
+      <a href="/thoughts" hx-get="/thoughts" hx-target="main" hx-push-url="true" 
+         style="display: inline-block; margin-bottom: 1.5rem; color: #7c3aed; text-decoration: none; font-size: 0.9rem;">
+        ← Back to all thoughts
+      </a>
+      
+      <div class="card" style="padding: 2rem; border-left: 4px solid #8b5cf6;">
+        <header style="margin-bottom: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 0.5rem;">
+            <h1 style="margin: 0; font-size: 1.75rem;">__title__</h1>
+            <span style="font-size: 0.8rem; background: #f3e8ff; color: #7c3aed; padding: 0.25rem 0.75rem; border-radius: 999px; text-transform: capitalize;">
+              __mood__
+            </span>
+          </div>
+          <div style="margin-top: 0.75rem; font-size: 0.85rem; color: #888;">
+            {{ time_ago(updated_at) }}
+          </div>
+        </header>
+
+        <div style="line-height: 1.8; color: #333;">
+          {{! body_html }}
+        </div>
+
+        {{ if not empty(scripture_ref) }}
+          <blockquote style="margin-top: 2rem; padding: 1rem 1.5rem; background: #faf5ff; border-left: 3px solid #7c3aed; font-style: italic; color: #6b21a8;">
+            📖 __scripture_ref__
+          </blockquote>
+        {{ endif }}
+      </div>
+
+      <footer style="margin-top: 2rem; text-align: center; color: #888; font-size: 0.9rem;">
+        ☦️ Glory to God for all things.
+      </footer>
+    </article>
+  </htx:each>
+
+  <htx:none>
+    <div class="card" style="text-align: center; padding: 3rem;">
+      <p style="font-size: 1.5rem; margin-bottom: 1rem;">🤷</p>
+      <p style="color: #666;">This thought seems to have wandered off.</p>
+      <a href="/thoughts" hx-get="/thoughts" hx-target="main" hx-push-url="true"
+         style="display: inline-block; margin-top: 1rem; color: #7c3aed;">
+        ← Back to all thoughts
+      </a>
+    </div>
+  </htx:none>
+</htx>
