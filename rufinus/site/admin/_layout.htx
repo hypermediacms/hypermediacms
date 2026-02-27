@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — Hypermedia CMS</title>
+  <link rel="stylesheet" href="/public/css/admin.css">
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
   <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
@@ -79,7 +80,7 @@
       margin-left: var(--sidebar-w);
       flex: 1;
       padding: 2rem 2.5rem;
-      max-width: 900px;
+      max-width: 1200px;
     }
 
     /* Cards & tables */
@@ -152,6 +153,7 @@
     <a href="/admin" hx-get="/admin" hx-target=".admin-main" hx-push-url="true">Dashboard</a>
     <a href="/admin/articles" hx-get="/admin/articles" hx-target=".admin-main" hx-push-url="true">Articles</a>
     <a href="/admin/docs" hx-get="/admin/docs" hx-target=".admin-main" hx-push-url="true">Documentation</a>
+    <a href="/admin/forms" hx-get="/admin/forms" hx-target=".admin-main" hx-push-url="true">Forms</a>
     <div class="nav-section">System</div>
     <a href="/" target="_blank">View Site</a>
     <div class="logout">
@@ -197,6 +199,7 @@
       setTimeout(function(){ t.remove(); }, 4500);
     });
   </script>
+  <script src="/public/js/admin.js"></script>
 
 </body>
 </html>

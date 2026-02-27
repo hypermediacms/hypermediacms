@@ -1,0 +1,85 @@
+<htx:type>form_submission</htx:type>
+<htx:where.form_slug>__slug__</htx:where.form_slug>
+<htx:status>published</htx:status>
+<htx:order>newest</htx:order>
+
+<htx>
+  <div class="breadcrumbs">
+    <a href="/admin/forms" class="breadcrumbs__link">Forms</a>
+    <span class="breadcrumbs__separator">›</span>
+    <a href="/admin/forms/__slug__/edit" class="breadcrumbs__link">__slug__</a>
+    <span class="breadcrumbs__separator">›</span>
+    <span class="breadcrumbs__current">Submissions</span>
+  </div>
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-header__title">Submissions</h1>
+      <p class="page-header__subtitle">Responses collected from your form</p>
+    </div>
+    <div class="page-header__actions">
+      <a href="/admin/forms/__slug__/edit" class="btn btn--secondary">← Edit Form</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <htx:each>
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr><th>Date</th><th>Submission Data</th><th></th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-sm">__created_at__</td>
+            <td>
+              <div class="text-mono text-sm" style="max-width: 500px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">__data__</div>
+            </td>
+            <td>
+              <div class="flex gap-2">
+                <button class="btn btn--ghost btn--sm" onclick="viewSubmission('__id__', '__data__')">View</button>
+                <button class="btn btn--ghost btn--sm" style="color: var(--color-error);" onclick="deleteSubmission(__id__)">Delete</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    </htx:each>
+
+    <htx:none>
+    <div class="empty-state">
+      <div class="empty-state__icon">📭</div>
+      <h3 class="empty-state__title">No submissions yet</h3>
+      <p class="empty-state__text">Submissions will appear here once users start filling out your form.</p>
+      <a href="/forms/__slug__" target="_blank" class="btn btn--primary">Preview Form</a>
+    </div>
+    </htx:none>
+  </div>
+
+<script>
+function viewSubmission(id, dataStr) {
+  try {
+    var data = JSON.parse(dataStr.replace(/&quot;/g, '"'));
+    var html = '<div style="font-size: 0.875rem;">';
+    for (var key in data) {
+      if (data.hasOwnProperty(key)) {
+        html += '<div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--color-gray-100);"><div style="font-weight: 600; color: var(--color-gray-500); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; margin-bottom: 0.25rem;">' + key + '</div><div style="color: var(--color-gray-900);">' + (data[key] || '<em style="color: var(--color-gray-400);">No response</em>') + '</div></div>';
+      }
+    }
+    html += '</div>';
+    Modal.show(html, { width: '480px' });
+  } catch (e) { Modal.show('<p>Unable to parse submission data.</p>'); }
+}
+
+async function deleteSubmission(id) {
+  var confirmed = await Modal.confirm('Are you sure you want to delete this submission? This cannot be undone.', { confirmText: 'Delete', danger: true });
+  if (!confirmed) return;
+  try {
+    var res = await fetch('/api/content/delete', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': 'htx-starter-key-001', 'X-HTX-Version': '1' }, body: JSON.stringify({ recordId: id }) });
+    if (res.ok) { Toast.success('Submission deleted'); location.reload(); }
+    else throw new Error('Delete failed');
+  } catch (err) { Toast.error('Failed to delete submission'); }
+}
+</script>
+</htx>

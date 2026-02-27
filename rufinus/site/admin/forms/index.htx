@@ -1,0 +1,68 @@
+<htx:type>form_definition</htx:type>
+<htx:status>published</htx:status>
+<htx:order>newest</htx:order>
+
+<htx>
+  <div class="page-header">
+    <div>
+      <h1 class="page-header__title">Forms</h1>
+      <p class="page-header__subtitle">Create and manage dynamic forms</p>
+    </div>
+    <div class="page-header__actions">
+      <a href="/admin/forms/new" class="btn btn--primary">
+        <span>+</span> New Form
+      </a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="table-container">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Form</th>
+            <th>Fields</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <htx:each>
+          <tr>
+            <td>
+              <a href="/admin/forms/__slug__/edit" style="text-decoration: none; display: block;">
+                <div style="font-weight: 600; color: var(--color-gray-900);">__title__</div>
+                <div class="text-sm text-muted text-mono">/forms/__slug__</div>
+              </a>
+            </td>
+            <td>
+              <span class="badge badge--neutral">__field_count__ fields</span>
+            </td>
+            <td>
+              <span class="badge badge--success">Active</span>
+            </td>
+            <td class="text-sm text-muted">__created_at__</td>
+            <td>
+              <div class="flex gap-2">
+                <a href="/admin/forms/__slug__/edit" class="btn btn--ghost btn--sm">Edit</a>
+                <a href="/admin/forms/__slug__/submissions" class="btn btn--ghost btn--sm">Submissions</a>
+                <a href="/forms/__slug__" target="_blank" class="btn btn--ghost btn--sm">Preview</a>
+              </div>
+            </td>
+          </tr>
+          </htx:each>
+        </tbody>
+      </table>
+    </div>
+
+    <htx:none>
+    <div class="empty-state">
+      <div class="empty-state__icon">📋</div>
+      <h3 class="empty-state__title">No forms yet</h3>
+      <p class="empty-state__text">Create your first form to start collecting responses from your users.</p>
+      <a href="/admin/forms/new" class="btn btn--primary">Create Form</a>
+    </div>
+    </htx:none>
+  </div>
+</htx>
