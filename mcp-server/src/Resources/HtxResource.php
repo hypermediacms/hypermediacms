@@ -48,7 +48,7 @@ class HtxResource implements ResourceInterface
         }
 
         if (!$this->isWithinSiteRoot($path)) {
-            throw new \SecurityException("Access denied: {$uri}");
+            throw new \RuntimeException("Access denied: {$uri}");
         }
 
         return file_get_contents($path);

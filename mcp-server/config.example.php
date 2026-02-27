@@ -31,16 +31,9 @@ return [
         'node_modules/**',
     ],
 
-    // Tools to enable (empty = all)
-    'enabled_tools' => [
-        'read_file',
-        'write_file',
-        'list_files',
-        // Future:
-        // 'query_content',
-        // 'create_content',
-        // 'update_content',
-        // 'delete_content',
-        // 'preview_page',
-    ],
+    // Custom schema path (defaults to <project-root>/schemas)
+    'schema_path' => null,
+
+    // Tools to enable (empty array = all tools)
+    'enabled_tools' => [],
 ];

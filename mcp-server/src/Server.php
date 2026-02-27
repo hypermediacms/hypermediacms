@@ -90,7 +90,7 @@ class Server
             ],
             'capabilities' => [
                 'resources' => [
-                    'subscribe' => true,
+                    'subscribe' => false,
                     'listChanged' => true,
                 ],
                 'tools' => new \stdClass(), // Empty object
@@ -103,7 +103,7 @@ class Server
 
     private function handlePing(): array
     {
-        return new \stdClass(); // Empty object
+        return [];
     }
 
     private function handleResourcesList(): array
@@ -141,8 +141,7 @@ class Server
 
     private function handleResourcesSubscribe(array $params): array
     {
-        // TODO: Implement subscription tracking
-        return new \stdClass();
+        return [];
     }
 
     private function handleToolsList(): array

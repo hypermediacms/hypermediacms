@@ -6,7 +6,8 @@
     "autoload": {
         "psr-4": {
             "Origen\\": "origen/src/",
-            "Rufinus\\": "rufinus/src/"
+            "Rufinus\\": "rufinus/src/",
+            "HyperMedia\\McpServer\\": "mcp-server/src/"
         },
         "files": [
             "origen/src/helpers.php"

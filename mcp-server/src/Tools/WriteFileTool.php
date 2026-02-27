@@ -111,29 +111,37 @@ class WriteFileTool implements ToolInterface
 
     private function isWithinSiteRoot(string $path): bool
     {
-        // Normalize the path
-        $normalized = $this->normalizePath($path);
-        $normalizedRoot = realpath($this->siteRoot);
-
-        if ($normalizedRoot === false) {
+        $realSiteRoot = realpath($this->siteRoot);
+        if ($realSiteRoot === false) {
             return false;
         }
 
-        return str_starts_with($normalized, $normalizedRoot);
-    }
-
-    private function normalizePath(string $path): string
-    {
-        // Prevent directory traversal
-        $path = str_replace(['../', '..\\'], '', $path);
-        
-        // Resolve what we can
-        $dir = dirname($path);
-        if (is_dir($dir)) {
-            return realpath($dir) . '/' . basename($path);
+        // For existing files, resolve directly
+        $realPath = realpath($path);
+        if ($realPath !== false) {
+            return str_starts_with($realPath, $realSiteRoot);
         }
 
-        return $this->siteRoot . '/' . ltrim($path, '/');
+        // For new files, resolve the parent directory
+        $parentDir = realpath(dirname($path));
+        if ($parentDir === false) {
+            // Walk up until we find an existing ancestor
+            $parts = explode('/', $path);
+            $check = '';
+            foreach ($parts as $i => $part) {
+                $check .= ($i > 0 ? '/' : '') . $part;
+                if (is_dir($check)) {
+                    $resolved = realpath($check);
+                    if ($resolved !== false && !str_starts_with($resolved, $realSiteRoot)) {
+                        return false;
+                    }
+                }
+            }
+            // Ensure the path starts with the site root prefix
+            return str_starts_with($path, $realSiteRoot);
+        }
+
+        return str_starts_with($parentDir, $realSiteRoot);
     }
 
     private function isDangerousPath(string $path): bool
