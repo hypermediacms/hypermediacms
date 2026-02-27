@@ -93,8 +93,8 @@ class ContentService
             'status' => $data['status'] ?? 'draft',
         ];
 
-        // Separate custom fields from core fields
-        $reserved = ['type', 'slug', 'title', 'body', 'status'];
+        // Separate custom fields from core fields (exclude htx-* and system fields)
+        $reserved = ['type', 'slug', 'title', 'body', 'status', 'responseTemplates', 'htx-token', 'htx-context', 'htx-recordId'];
         $customFields = array_diff_key($data, array_flip($reserved));
 
         // Pass custom field values to WriteThrough for frontmatter
@@ -130,8 +130,8 @@ class ContentService
 
         $record = $this->writeThrough->updateContent($siteSlug, $siteId, $existing, $fillable);
 
-        // Sync custom field values
-        $reserved = ['type', 'slug', 'title', 'body', 'status'];
+        // Sync custom field values (exclude htx-* and system fields)
+        $reserved = ['type', 'slug', 'title', 'body', 'status', 'responseTemplates', 'htx-token', 'htx-context', 'htx-recordId'];
         $customFields = array_diff_key($data, array_flip($reserved));
         if (!empty($customFields)) {
             $this->schemaService->syncFieldValues($record['id'], $siteId, $customFields);

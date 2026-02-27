@@ -35,14 +35,13 @@ class ResponseExtractor
 
         if (preg_match_all($pattern, $rootDsl, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
-                $responseType = strtolower($match[1] ?: 'default');
                 $attributes = $this->parseAttributes($match[2] ?? '');
+                // Use 'name' attribute if present, otherwise use tag suffix
+                $responseType = strtolower($attributes['name'] ?? $match[1] ?: 'default');
                 $content = trim($match[3]);
                 
-                $responses[$responseType] = [
-                    'content' => $content,
-                    'attributes' => $attributes,
-                ];
+                // Store just the content string for simpler consumption
+                $responses[$responseType] = $content;
             }
         }
         

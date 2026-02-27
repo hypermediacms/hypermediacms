@@ -13,7 +13,11 @@ class TemplateHydratorService
                 continue;
             }
             $escaped = htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+            // Support both __placeholder__ and %%placeholder%% syntax
+            // %%placeholder%% is used in response templates that need to survive
+            // Rufinus hydration and get processed by Origen during execute
             $template = str_replace("__{$key}__", $escaped, $template);
+            $template = str_replace("%%{$key}%%", $escaped, $template);
         }
         return $template;
     }

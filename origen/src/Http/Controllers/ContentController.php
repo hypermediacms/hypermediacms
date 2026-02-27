@@ -61,10 +61,10 @@ class ContentController
             'htx-context' => $dto->action(),
             'htx-token' => $tokenResult['token'],
         ];
-        if (!empty($dto->responseTemplates['redirect'])) {
-            $redirect = $dto->responseTemplates['redirect'];
-            $redirectUrl = is_array($redirect) ? ($redirect['content'] ?? $redirect) : $redirect;
-            $payloadData['responseTemplates'] = ['redirect' => $redirectUrl];
+        // Include all response templates in payload so execute can use them
+        // (e.g., success template with %%placeholders%% for chained mutations)
+        if (!empty($dto->responseTemplates)) {
+            $payloadData['responseTemplates'] = $dto->responseTemplates;
         }
         $resp->payload = json_encode($payloadData);
 
@@ -77,6 +77,13 @@ class ContentController
             'status' => $currentStatus,
             'type' => $dto->type(),
         ];
+
+        // Add custom field values for hydration
+        if ($record && !empty($record['fieldValues'])) {
+            foreach ($record['fieldValues'] as $fv) {
+                $resp->values[$fv['field_name']] = $fv['field_value'] ?? '';
+            }
+        }
 
         // Pre-select status dropdown
         foreach (['draft', 'published', 'review', 'archived'] as $s) {
@@ -244,7 +251,25 @@ class ContentController
             return Response::json(['message' => $e->getMessage()], 422);
         }
 
-        $values = ['title' => $updated['title'], 'id' => $updated['id']];
+        // Build values with all fields for template hydration
+        // (needed for %%placeholder%% in chained mutation responses)
+        $values = [
+            'id' => $updated['id'],
+            'title' => $updated['title'],
+            'slug' => $updated['slug'],
+            'body' => $updated['body'] ?? '',
+            'status' => $updated['status'],
+            'type' => $updated['type'],
+        ];
+        
+        // Re-fetch to get updated custom field values
+        $refreshed = $this->contentService->findForTenant($updated['id'], $site);
+        if ($refreshed && !empty($refreshed['fieldValues'])) {
+            foreach ($refreshed['fieldValues'] as $fv) {
+                $values[$fv['field_name']] = $fv['field_value'] ?? '';
+            }
+        }
+
         $templates = $this->resolveResponseTemplates($request);
         $mode = !empty($templates['redirect']) ? 'redirect' : 'success';
 
