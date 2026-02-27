@@ -463,3 +463,122 @@ vendor/bin/phpunit origen/tests/
 - **"Invalid token" errors** — The `APP_KEY` in `.env` may have changed. Existing tokens become invalid.
 - **Database missing** — It auto-creates on boot. Just restart Origen.
 - **Flat files out of sync** — Run `php hcms index:rebuild` to rebuild the SQLite index from flat files.
+
+---
+
+## MCP Server (AI Integration)
+
+Hypermedia CMS includes a Model Context Protocol (MCP) server for AI-assisted content management. This allows AI assistants like Claude to directly interact with the CMS.
+
+### Starting the MCP Server
+
+```bash
+php mcp/server.php
+```
+
+The server communicates via stdin/stdout using JSON-RPC.
+
+### Claude Desktop Integration
+
+Add to your Claude Desktop config (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "hypermedia-cms": {
+      "command": "php",
+      "args": ["/path/to/hypermediacms/mcp/server.php"],
+      "env": {
+        "SITE_KEY": "htx-starter-key-001"
+      }
+    }
+  }
+}
+```
+
+### Available Tools (12)
+
+| Category | Tool | Description |
+|----------|------|-------------|
+| Discovery | `list_routes` | List all HTX routes |
+| Discovery | `list_content_types` | List content types with schemas |
+| Scaffolding | `scaffold_section` | Create complete section (schema + pages + admin) |
+| Scaffolding | `create_htx` | Create HTX template file |
+| Scaffolding | `create_schema` | Create YAML schema |
+| Templates | `read_htx` | Read existing HTX template |
+| Templates | `update_htx` | Modify existing template |
+| Content | `get_content` | Fetch content with filtering |
+| Content | `create_content` | Create new content |
+| Content | `update_content` | Update existing content |
+| Content | `delete_content` | Delete content |
+| Preview | `preview_content` | Preview through template |
+
+### Available Resources (9)
+
+Resources expose data the AI can read directly:
+
+| URI Pattern | Description |
+|-------------|-------------|
+| `hcms://content/{type}` | List content by type |
+| `hcms://content/{type}/{slug}` | Individual content entry |
+| `hcms://schemas` | List all schemas |
+| `hcms://schema/{type}` | Schema definition |
+| `hcms://templates` | List all HTX files |
+| `hcms://template/{path}` | Template file content |
+| `hcms://site/routes` | All routes and configs |
+| `hcms://site/config` | Site configuration |
+| `hcms://site/stats` | Content counts and metrics |
+
+### Available Prompts (6)
+
+Prompts are pre-built workflows for common tasks:
+
+| Prompt | Description |
+|--------|-------------|
+| `create_blog_section` | Complete blog with categories, tags, author |
+| `create_landing_page` | Landing page with configurable sections |
+| `create_portfolio` | Portfolio/projects showcase |
+| `setup_docs` | Documentation with sidebar navigation |
+| `audit_site` | Review structure, suggest improvements |
+| `quick_content` | AI-assisted content writing |
+
+### Example: Scaffold a Section
+
+```bash
+# Using MCP tools, an AI can scaffold an entire section:
+
+1. scaffold_section(name="event", fields=[
+     {name: "date", type: "date"},
+     {name: "location", type: "text"},
+     {name: "capacity", type: "number"}
+   ], add_to_nav=true)
+
+# This creates:
+# - schemas/starter/event.yaml
+# - rufinus/site/events/index.htx
+# - rufinus/site/events/[slug].htx  
+# - rufinus/site/admin/events/index.htx
+# - rufinus/site/admin/events/new.htx
+# - rufinus/site/admin/events/[id].htx
+# - Updated navigation
+
+2. create_content(content_type="event", title="Launch Party",
+     body="Join us for...", status="published",
+     custom_fields={date: "2024-04-01", location: "HQ"})
+
+# Content is live immediately
+```
+
+### MCP Architecture
+
+```
+mcp/
+├── server.php                 # Entry point (stdio JSON-RPC)
+├── mcp.json                   # Claude Desktop manifest
+├── README.md                  # Documentation
+└── src/
+    ├── MCPServer.php          # Protocol handler
+    ├── Tools/                 # 12 tool implementations
+    ├── Resources/             # 9 resource handlers
+    └── Prompts/               # 6 workflow prompts
+```
