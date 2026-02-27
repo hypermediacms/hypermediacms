@@ -1,0 +1,12 @@
+fields:
+  - field_name: summary
+    field_type: textarea
+    constraints:
+      max_length: 500
+    ui_hints:
+      placeholder: "Brief description of this documentation page"
+  - field_name: sort_order
+    field_type: number
+    constraints: {}
+    ui_hints:
+      placeholder: "Display order (lower numbers appear first)"

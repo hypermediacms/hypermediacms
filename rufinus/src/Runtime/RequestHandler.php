@@ -207,8 +207,14 @@ class RequestHandler
     }
 
     /**
-     * Inject route params as meta directives into the DSL string.
-     * Prepends <htx:recordId> for 'slug'/'id' params, and <htx:param> for others.
+     * Inject route params into the DSL string.
+     *
+     * 1. Replace __param__ placeholders inside <htx:*> meta directive tags
+     *    so e.g. <htx:where>category=__slug__</htx:where> resolves correctly.
+     * 2. Inject top-level <htx:param> meta directives for simple detail pages,
+     *    but skip injection when the resolved value already appears inside a
+     *    <htx:where> tag (prevents wrong content-table filtering on cross-type pages).
+     * 3. Always inject <htx:recordId> for numeric 'id' params.
      */
     private function injectParams(string $dsl, array $params): string
     {
@@ -216,15 +222,44 @@ class RequestHandler
             return $dsl;
         }
 
-        $injected = '';
-
+        $safeParams = [];
         foreach ($params as $name => $value) {
-            $safeValue = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-            // Inject as a named meta directive so central can filter on it
-            $injected .= "<htx:{$name}>{$safeValue}</htx:{$name}>\n";
-            // Only inject recordId for numeric IDs (not slugs)
+            $safeParams[$name] = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+        }
+
+        // Step 1: Replace __param__ placeholders inside <htx:*> meta directive tags
+        $dsl = preg_replace_callback(
+            '/<htx:(\w+)>([^<]*)<\/htx:\1>/',
+            function ($match) use ($safeParams) {
+                $tag = $match[1];
+                $content = $match[2];
+                foreach ($safeParams as $name => $value) {
+                    $content = str_replace('__' . $name . '__', $value, $content);
+                }
+                return "<htx:{$tag}>{$content}</htx:{$tag}>";
+            },
+            $dsl
+        );
+
+        // Step 2: Determine which params are used inside <htx:where> after resolution
+        $whereUsedParams = [];
+        if (preg_match('/<htx:where>([^<]*)<\/htx:where>/', $dsl, $whereMatch)) {
+            foreach ($safeParams as $name => $value) {
+                if (str_contains($whereMatch[1], $value)) {
+                    $whereUsedParams[$name] = true;
+                }
+            }
+        }
+
+        // Step 3: Inject top-level meta directives for params NOT consumed by <htx:where>
+        $injected = '';
+        foreach ($safeParams as $name => $value) {
+            if (!isset($whereUsedParams[$name])) {
+                $injected .= "<htx:{$name}>{$value}</htx:{$name}>\n";
+            }
+            // Always inject recordId for numeric IDs
             if ($name === 'id' && is_numeric($value)) {
-                $injected .= "<htx:recordId>{$safeValue}</htx:recordId>\n";
+                $injected .= "<htx:recordId>{$value}</htx:recordId>\n";
             }
         }
 

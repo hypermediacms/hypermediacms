@@ -105,6 +105,16 @@ class Bootstrap
             $siteRepo->upsert($siteConfig);
         }
 
+        // Schema scan: sync schema YAMLs into SQLite
+        $schemaFileManager = $container->make(SchemaFileManager::class);
+        $schemaService = $container->make(SchemaService::class);
+        foreach ($schemaFileManager->listAll() as $entry) {
+            $site = $siteRepo->findBySlug($entry['siteSlug']);
+            if ($site && !empty($entry['schema']['fields'])) {
+                $schemaService->saveTypeSchema($site, $entry['contentType'], $entry['schema']['fields']);
+            }
+        }
+
         // Ensure super_admins have membership on every site
         $userRepo = $container->make(UserRepository::class);
         $userRepo->ensureSuperAdminMemberships($connection);

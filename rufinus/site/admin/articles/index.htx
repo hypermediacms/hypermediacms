@@ -1,0 +1,42 @@
+<htx:type>article</htx:type>
+<htx:howmany>50</htx:howmany>
+<htx:order>recent</htx:order>
+
+<htx>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+      <h1>Articles</h1>
+      <p class="text-muted text-sm">All articles across every status.</p>
+    </div>
+    <a href="/admin/articles/new" hx-get="/admin/articles/new" hx-target=".admin-main" hx-push-url="true" class="btn btn-primary">+ New Article</a>
+  </div>
+
+  <div class="admin-card">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Status</th>
+          <th>Category</th>
+          <th>Updated</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <htx:each>
+          <tr>
+            <td><strong>__title__</strong></td>
+            <td><span class="badge-status badge-__status__">__status__</span></td>
+            <td class="text-sm text-muted">{{ if not empty(category) }}{{ category }}{{ endif }}</td>
+            <td class="text-sm text-muted">{{ time_ago(updated_at) }}</td>
+            <td><a href="/admin/articles/__id__" hx-get="/admin/articles/__id__" hx-target=".admin-main" hx-push-url="true" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">Edit</a></td>
+          </tr>
+        </htx:each>
+      </tbody>
+    </table>
+
+    <htx:none>
+      <p class="text-muted" style="padding: 1.5rem; text-align: center;">No articles yet. <a href="/admin/articles/new" hx-get="/admin/articles/new" hx-target=".admin-main" hx-push-url="true">Create your first article.</a></p>
+    </htx:none>
+  </div>
+</htx>

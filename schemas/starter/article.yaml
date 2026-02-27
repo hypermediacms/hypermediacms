@@ -1,0 +1,17 @@
+fields:
+  - field_name: summary
+    field_type: textarea
+    constraints:
+      max_length: 500
+    ui_hints:
+      placeholder: "Brief summary of the article"
+  - field_name: category
+    field_type: select
+    constraints:
+      options:
+        - tutorial
+        - guide
+        - reference
+        - update
+    ui_hints:
+      placeholder: "Select a category"

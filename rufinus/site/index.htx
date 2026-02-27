@@ -16,19 +16,19 @@
   <htx:each>
     <article class="card">
       <h3><a href="/articles/__slug__" hx-get="/articles/__slug__" hx-target="main" hx-push-url="true">__title__</a></h3>
-      <p>__body__</p>
-      <small style="color: #888;">__created_at__ &middot; __status__</small>
+      {{ if not empty(summary) }}
+        <p style="color: #555;">{{ summary }}</p>
+      {{ else }}
+        <p>__body__</p>
+      {{ endif }}
+      <small style="color: #888;">{{ time_ago(created_at) }} &middot; <span style="text-transform: capitalize;">__status__</span></small>
     </article>
   </htx:each>
 
   <htx:none>
-    <div class="card" style="text-align: center; color: #888; padding: 3rem;">
-      <p>No articles yet. Create some content via the API to get started!</p>
-      <pre style="text-align: left; margin-top: 1rem;">curl -X POST http://localhost:8080/api/content/prepare \
-  -H "Content-Type: application/json" \
-  -H "X-Site-Key: htx-starter-key-001" \
-  -H "X-HTX-Version: 1" \
-  -d '{"meta":{"action":"prepare-save","type":"article"},"responseTemplates":[]}'</pre>
+    <div class="card" style="text-align: center; color: #666; padding: 3rem;">
+      <h3 style="margin-bottom: 0.5rem;">No articles yet</h3>
+      <p>Get started by creating your first article in the <a href="/admin" style="color: #1a1a2e; font-weight: 600;">admin panel</a>.</p>
     </div>
   </htx:none>
 </htx>

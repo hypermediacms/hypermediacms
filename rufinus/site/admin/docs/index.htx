@@ -1,0 +1,40 @@
+<htx:type>documentation</htx:type>
+<htx:howmany>50</htx:howmany>
+<htx:order>recent</htx:order>
+
+<htx>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+      <h1>Documentation</h1>
+      <p class="text-muted text-sm">All documentation pages across every status.</p>
+    </div>
+    <a href="/admin/docs/new" hx-get="/admin/docs/new" hx-target=".admin-main" hx-push-url="true" class="btn btn-primary">+ New Page</a>
+  </div>
+
+  <div class="admin-card">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Status</th>
+          <th>Updated</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <htx:each>
+          <tr>
+            <td><strong>__title__</strong></td>
+            <td><span class="badge-status badge-__status__">__status__</span></td>
+            <td class="text-sm text-muted">{{ time_ago(updated_at) }}</td>
+            <td><a href="/admin/docs/__id__" hx-get="/admin/docs/__id__" hx-target=".admin-main" hx-push-url="true" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">Edit</a></td>
+          </tr>
+        </htx:each>
+      </tbody>
+    </table>
+
+    <htx:none>
+      <p class="text-muted" style="padding: 1.5rem; text-align: center;">No documentation pages yet. <a href="/admin/docs/new" hx-get="/admin/docs/new" hx-target=".admin-main" hx-push-url="true">Create your first doc page.</a></p>
+    </htx:none>
+  </div>
+</htx>

@@ -5,8 +5,14 @@
   <htx:each>
     <article class="card" style="padding: 2rem;">
       <h1>__title__</h1>
-      <div style="color: #888; margin-bottom: 1rem;">__created_at__ &middot; __status__</div>
-      <div style="line-height: 1.8;">__body__</div>
+      <div style="color: #888; margin-bottom: 1rem; font-size: 0.9rem;">
+        {{ time_ago(updated_at) }}
+        {{ if not empty(category) }}
+          &middot; <span style="background: #f1f5f9; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.8rem; text-transform: capitalize;">{{ category }}</span>
+        {{ endif }}
+        &middot; <span style="text-transform: capitalize;">__status__</span>
+      </div>
+      <div style="line-height: 1.8;">{{! body_html }}</div>
     </article>
   </htx:each>
 

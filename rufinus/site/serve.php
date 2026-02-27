@@ -32,4 +32,18 @@ http_response_code($response->status);
 foreach ($response->headers as $k => $v) {
     header("{$k}: {$v}");
 }
+foreach ($response->cookies as $cookie) {
+    setcookie(
+        $cookie['name'],
+        $cookie['value'],
+        [
+            'expires' => $cookie['maxAge'] > 0 ? time() + $cookie['maxAge'] : 0,
+            'path' => $cookie['path'] ?? '/',
+            'domain' => $cookie['domain'] ?? '',
+            'secure' => $cookie['secure'] ?? false,
+            'httponly' => $cookie['httpOnly'] ?? true,
+            'samesite' => $cookie['sameSite'] ?? 'Lax',
+        ]
+    );
+}
 echo $response->body;

@@ -17,7 +17,6 @@
 
   <htx:none>
     <div class="card" style="text-align: center; padding: 3rem;">
-      <h2 style="color: #ddd;">404</h2>
       <p style="color: #666;">This documentation page was not found.</p>
       <a href="/docs" hx-get="/docs" hx-target="main" hx-push-url="true"
          style="color: #1a1a2e; margin-top: 1rem; display: inline-block;">Browse all documentation &rarr;</a>

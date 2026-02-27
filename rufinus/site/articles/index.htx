@@ -3,15 +3,33 @@
 <htx:howmany>20</htx:howmany>
 
 <htx>
+  <div style="margin-bottom: 1.5rem;">
+    <h1>Articles</h1>
+    <p style="color: #666;">All published articles.</p>
+  </div>
+
   <htx:each>
     <article class="card">
       <h3><a href="/articles/__slug__" hx-get="/articles/__slug__" hx-target="main" hx-push-url="true">__title__</a></h3>
-      <p>__body__</p>
-      <small style="color: #888;">__created_at__ &middot; __status__</small>
+      {{ if not empty(summary) }}
+        <p style="color: #555;">{{ summary }}</p>
+      {{ else }}
+        <p>__body__</p>
+      {{ endif }}
+      <div style="color: #888; font-size: 0.85rem; margin-top: 0.5rem;">
+        {{ time_ago(updated_at) }}
+        {{ if not empty(category) }}
+          &middot; <span style="background: #f1f5f9; padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.75rem; text-transform: capitalize;">{{ category }}</span>
+        {{ endif }}
+        &middot; <span style="text-transform: capitalize;">__status__</span>
+      </div>
     </article>
   </htx:each>
 
   <htx:none>
-    <p style="color: #888; padding: 2rem 0;">No articles found.</p>
+    <div class="card" style="text-align: center; color: #666; padding: 3rem;">
+      <h3 style="margin-bottom: 0.5rem;">No articles yet</h3>
+      <p>Create your first article in the <a href="/admin/articles/new" style="color: #1a1a2e; font-weight: 600;">admin panel</a>.</p>
+    </div>
   </htx:none>
 </htx>
