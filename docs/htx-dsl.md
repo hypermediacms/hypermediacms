@@ -126,6 +126,42 @@ Example -- a toggle button that swaps itself after mutation:
 
 Here, `__endpoint__` and `__payload__` are filled by Rufinus during prepare (they contain the action token needed for the next mutation). But `%%status%%` passes through untouched and gets replaced by Origen with the updated status value *after* the toggle executes.
 
+### Placeholder Evaluation Order
+
+The three placeholder syntaxes are processed at different stages of the rendering pipeline. Understanding this order is important for dynamic route pages that iterate over content rows.
+
+| Stage | Syntax | Processed by | Scope |
+|-------|--------|-------------|-------|
+| 1. Route param injection | `__param__` | `RequestHandler::injectParams()` | Inside `<htx:*>` meta directives only |
+| 2. Expression evaluation | `{{ field }}` | Expression engine | Per-row, each row gets its own data context |
+| 3. Placeholder hydration | `__field__` | `Hydrator::hydrate()` | Per-row, inside `<htx:each>` |
+| 4. Deferred hydration | `%%field%%` | Origen (server-side) | Post-mutation response templates |
+
+**Key detail:** Route param injection (stage 1) only replaces `__param__` tokens inside `<htx:*>` meta directive tags. It does **not** replace tokens in the template body. This means `__slug__` inside `<htx:where>` is resolved from the URL, while `__slug__` inside `<htx:each>` is preserved for per-row hydration.
+
+**Example -- category page querying articles by route param:**
+
+```html
+<!-- /categories/[slug].htx -->
+<htx:type>article</htx:type>
+<htx:where>category=__slug__</htx:where>
+
+<htx>
+  <htx:each>
+    <!-- __slug__ here is hydrated per-row with each article's slug -->
+    <a href="/articles/__slug__">__title__</a>
+
+    <!-- {{ slug }} also works per-row via the expression engine -->
+    <a href="/articles/{{ slug }}">{{ title }}</a>
+  </htx:each>
+</htx>
+```
+
+When visiting `/categories/getting-started`:
+1. `__slug__` inside `<htx:where>` is replaced with `getting-started` (route param injection).
+2. `__slug__` inside `<htx:each>` is **not** touched by route injection -- it is hydrated per-row with each article's own slug value.
+3. `{{ slug }}` inside `<htx:each>` is evaluated per-row by the expression engine.
+
 ### Repeating Blocks
 
 `<htx:each>...</htx:each>` repeats its inner HTML for each row in the result set:
@@ -384,6 +420,8 @@ Filenames wrapped in square brackets create dynamic route segments. The matched 
 - `/users/[id].htx` -- a request to `/users/42` captures `id = "42"`
 
 Route parameters are automatically injected into the DSL as meta directives before parsing. For example, visiting `/articles/hello-world` with `[slug].htx` causes Rufinus to prepend `<htx:slug>hello-world</htx:slug>` to the file contents. Numeric `id` parameters also generate a `<htx:recordId>` directive.
+
+Route parameter values are also substituted into `__param__` tokens inside `<htx:*>` meta directive tags (e.g., `<htx:where>category=__slug__</htx:where>`). Importantly, this substitution is scoped to meta directives only -- `__param__` tokens inside the `<htx:each>` template body are left intact for per-row content hydration. See the [Placeholder Evaluation Order](#placeholder-evaluation-order) section for details.
 
 ### Excluded Paths
 
