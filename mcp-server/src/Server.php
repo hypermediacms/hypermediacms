@@ -193,6 +193,14 @@ class Server
 
     private function getMimeType(string $uri): string
     {
+        $scheme = parse_url($uri, PHP_URL_SCHEME) ?? '';
+        $host = parse_url($uri, PHP_URL_HOST) ?? '';
+
+        // Scheme-aware MIME types for extensionless URIs
+        if ($scheme === 'site' && $host === 'routes') return 'application/json';
+        if ($scheme === 'site' && $host === 'config') return 'text/yaml';
+
+        // Extension-based fallback
         $path = parse_url($uri, PHP_URL_PATH) ?? '';
         $ext = pathinfo($path, PATHINFO_EXTENSION);
 

@@ -5,11 +5,16 @@ declare(strict_types=1);
 
 /**
  * Hypermedia CMS MCP Server
- * 
+ *
  * Usage:
- *   ./mcp-serve /path/to/site
- *   ./mcp-serve /path/to/site /path/to/config.php
- * 
+ *   ./mcp-serve /path/to/site [config-file]
+ *   ./mcp-serve /path/to/site --http [--port=8808] [--host=127.0.0.1]
+ *
+ * Flags:
+ *   --http          Start HTTP transport instead of stdio
+ *   --port=N        HTTP port (default: 8808)
+ *   --host=H        HTTP bind address (default: 127.0.0.1)
+ *
  * For Claude Desktop, add to claude_desktop_config.json:
  * {
  *   "mcpServers": {
@@ -43,9 +48,13 @@ if (!$autoloader) {
 
 use HyperMedia\McpServer\Server;
 use HyperMedia\McpServer\Transport\StdioTransport;
+use HyperMedia\McpServer\Transport\HttpTransport;
 use HyperMedia\McpServer\Resources\HtxResource;
 use HyperMedia\McpServer\Resources\ContentResource;
+use HyperMedia\McpServer\Resources\SchemaResource;
+use HyperMedia\McpServer\Resources\SiteResource;
 use HyperMedia\McpServer\Services\OrigenClient;
+use HyperMedia\McpServer\Services\SchemaRegistry;
 use HyperMedia\McpServer\Tools\ReadFileTool;
 use HyperMedia\McpServer\Tools\WriteFileTool;
 use HyperMedia\McpServer\Tools\ListFilesTool;
@@ -55,23 +64,47 @@ use HyperMedia\McpServer\Tools\UpdateContentTool;
 use HyperMedia\McpServer\Tools\DeleteContentTool;
 use HyperMedia\McpServer\Tools\GetSchemaTool;
 
-// Parse arguments
-$siteRoot = $argv[1] ?? null;
-$configPath = $argv[2] ?? null;
+// Separate flags from positional arguments
+$flags = [];
+$positional = [];
+
+for ($i = 1; $i < $argc; $i++) {
+    if (str_starts_with($argv[$i], '--')) {
+        if (str_contains($argv[$i], '=')) {
+            [$key, $value] = explode('=', $argv[$i], 2);
+            $flags[ltrim($key, '-')] = $value;
+        } else {
+            $flags[ltrim($argv[$i], '-')] = true;
+        }
+    } else {
+        $positional[] = $argv[$i];
+    }
+}
+
+$siteRoot = $positional[0] ?? null;
+$configPath = $positional[1] ?? null;
+$useHttp = isset($flags['http']);
+$httpPort = (int) ($flags['port'] ?? 8808);
+$httpHost = $flags['host'] ?? '127.0.0.1';
 
 if (!$siteRoot) {
-    fwrite(STDERR, "Usage: mcp-serve <site-root> [config-file]\n");
+    fwrite(STDERR, "Usage: mcp-serve <site-root> [config-file] [flags]\n");
     fwrite(STDERR, "\n");
     fwrite(STDERR, "Arguments:\n");
     fwrite(STDERR, "  site-root    Path to the Rufinus site directory\n");
     fwrite(STDERR, "  config-file  Optional path to config.php\n");
+    fwrite(STDERR, "\n");
+    fwrite(STDERR, "Flags:\n");
+    fwrite(STDERR, "  --http          Start HTTP transport instead of stdio\n");
+    fwrite(STDERR, "  --port=N        HTTP port (default: 8808)\n");
+    fwrite(STDERR, "  --host=H        HTTP bind address (default: 127.0.0.1)\n");
     exit(1);
 }
 
 // Resolve site root
 $siteRoot = realpath($siteRoot);
 if (!$siteRoot || !is_dir($siteRoot)) {
-    fwrite(STDERR, "Error: Site root directory not found: {$argv[1]}\n");
+    fwrite(STDERR, "Error: Site root directory not found: {$positional[0]}\n");
     exit(1);
 }
 
@@ -86,6 +119,7 @@ $config = array_merge([
     'origen_url' => getenv('ORIGEN_URL') ?: 'http://localhost:8080',
     'site_key' => getenv('SITE_KEY') ?: 'htx-default-key',
     'audit_log' => null,
+    'http_api_key' => getenv('MCP_API_KEY') ?: null,
 ], $config);
 
 // Create server
@@ -103,9 +137,14 @@ if (isset($config['schema_path'])) {
     $schemaPath = $config['schema_path'];
 }
 
+// Create shared schema registry
+$schemaRegistry = new SchemaRegistry($schemaPath);
+
 // Register resources
 $server->registerResource(new HtxResource($siteRoot));
 $server->registerResource(new ContentResource($origen));
+$server->registerResource(new SchemaResource($schemaRegistry));
+$server->registerResource(new SiteResource($siteRoot));
 
 // Register file tools
 $server->registerTool(new ReadFileTool($siteRoot));
@@ -117,13 +156,24 @@ $server->registerTool(new QueryContentTool($origen));
 $server->registerTool(new CreateContentTool($origen));
 $server->registerTool(new UpdateContentTool($origen));
 $server->registerTool(new DeleteContentTool($origen));
-$server->registerTool(new GetSchemaTool($origen, $schemaPath));
+$server->registerTool(new GetSchemaTool($origen, $schemaRegistry));
 
 // Start transport
-$transport = new StdioTransport($server);
-
 fwrite(STDERR, "[MCP] Hypermedia CMS MCP Server\n");
 fwrite(STDERR, "[MCP] Site root: {$siteRoot}\n");
+
+if ($useHttp) {
+    $apiKey = $config['http_api_key'];
+    $transport = new HttpTransport($server, $httpHost, $httpPort, $apiKey);
+    fwrite(STDERR, "[MCP] Transport: HTTP on {$httpHost}:{$httpPort}\n");
+    if ($apiKey) {
+        fwrite(STDERR, "[MCP] API key authentication enabled\n");
+    }
+} else {
+    $transport = new StdioTransport($server);
+    fwrite(STDERR, "[MCP] Transport: stdio\n");
+}
+
 fwrite(STDERR, "[MCP] Ready for connections\n");
 
 $transport->listen();

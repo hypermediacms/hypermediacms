@@ -34,6 +34,9 @@ return [
     // Custom schema path (defaults to <project-root>/schemas)
     'schema_path' => null,
 
+    // HTTP transport API key (null = no auth required)
+    'http_api_key' => getenv('MCP_API_KEY') ?: null,
+
     // Tools to enable (empty array = all tools)
     'enabled_tools' => [],
 ];
