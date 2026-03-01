@@ -1,0 +1,122 @@
+<htx:type>recipe</htx:type>
+<htx:status>published</htx:status>
+<htx:howmany>50</htx:howmany>
+<htx:order>newest</htx:order>
+
+<htx>
+<style>
+  .recipe-viewer {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .recipe-list {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+  
+  .recipe-list-header {
+    background: #1a1a2e;
+    color: #fff;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+  }
+  
+  .recipe-list-items {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  
+  .recipe-list-item {
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  
+  .recipe-list-item:hover {
+    background: #f8f8f8;
+  }
+  
+  .recipe-list-item.active {
+    background: #e8f4ff;
+    border-left: 3px solid #1a1a2e;
+  }
+  
+  .recipe-list-item h3 {
+    font-size: 0.95rem;
+    margin: 0 0 0.25rem 0;
+    font-weight: 600;
+  }
+  
+  .recipe-list-item .meta {
+    font-size: 0.8rem;
+    color: #666;
+  }
+  
+  .recipe-preview {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 1.5rem;
+    min-height: 400px;
+  }
+  
+  .recipe-preview-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    color: #999;
+    font-size: 1.1rem;
+  }
+  
+  @media (min-width: 768px) {
+    .recipe-viewer {
+      grid-template-columns: 320px 1fr;
+    }
+  }
+</style>
+
+<h1 style="margin-bottom: 0.5rem;">Recipe Viewer</h1>
+<p style="color: #666; margin-bottom: 1.5rem;">Dynamic recipe browser showcasing <code>&lt;htx:nest&gt;</code> for nested data. Click any recipe to preview!</p>
+
+<div class="recipe-viewer">
+  <div class="recipe-list">
+    <div class="recipe-list-header">📚 All Recipes</div>
+    <div class="recipe-list-items">
+      <htx:each>
+        <div class="recipe-list-item" 
+             hx-get="/recipes/__slug__" 
+             hx-target="#recipe-preview" 
+             hx-swap="innerHTML"
+             onclick="document.querySelectorAll('.recipe-list-item').forEach(i => i.classList.remove('active')); this.classList.add('active');">
+          <h3>__title__</h3>
+          <div class="meta">
+            {{ if prep_time }}⏱️ __prep_time__m{{ endif }}
+            {{ if cook_time }} · 🔥 __cook_time__m{{ endif }}
+            {{ if servings }} · 🍽️ __servings__{{ endif }}
+          </div>
+        </div>
+      </htx:each>
+    </div>
+  </div>
+  
+  <div class="recipe-preview" id="recipe-preview">
+    <div class="recipe-preview-empty">
+      👈 Select a recipe to preview<br>
+      <small style="margin-top: 0.5rem; display: block;">Ingredients and steps rendered with &lt;htx:nest&gt;</small>
+    </div>
+  </div>
+</div>
+
+<htx:none>
+  <div class="card" style="text-align: center; padding: 3rem;">
+    <h3>No recipes found</h3>
+    <p>Create some recipes to see them here!</p>
+  </div>
+</htx:none>
+</htx>
