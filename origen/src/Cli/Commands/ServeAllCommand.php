@@ -26,8 +26,8 @@ class ServeAllCommand implements CommandInterface
         $origenPort = $config->get('server_port', '8080');
         $origenDocroot = dirname(__DIR__, 3) . '/public';
 
-        $siteHost = '127.0.0.1';
-        $sitePort = '8081';
+        $siteHost = $config->get('site_host', '0.0.0.0');
+        $sitePort = $config->get('site_port', '8081');
         $siteDocroot = dirname(__DIR__, 4) . '/rufinus/site';
 
         if (!is_dir($siteDocroot)) {

@@ -6,7 +6,10 @@
   <title>Hypermedia CMS</title>
   <script src="https://unpkg.com/htmx.org@2"></script>
   <style>
+    /* Reset */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    /* Base (Mobile First) */
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #f5f5f5;
@@ -16,52 +19,87 @@
       display: flex;
       flex-direction: column;
     }
+    
+    /* Navigation - Mobile */
     nav {
       background: #1a1a2e;
       color: #fff;
-      padding: 0.75rem 2rem;
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
+      padding: 0.75rem 1rem;
       position: sticky;
       top: 0;
       z-index: 100;
     }
-    nav .brand {
+    .nav-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
       font-weight: 700;
       font-size: 1.1rem;
-      margin-right: auto;
       letter-spacing: -0.02em;
-    }
-    nav a {
-      color: rgba(255,255,255,0.8);
+      color: #fff;
       text-decoration: none;
-      font-size: 0.9rem;
+    }
+    .nav-toggle {
+      display: block;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.25rem;
+    }
+    .nav-links {
+      display: none;
+      flex-direction: column;
+      gap: 0;
+      padding-top: 0.75rem;
+    }
+    .nav-links.open { display: flex; }
+    .nav-links a {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      font-size: 0.95rem;
+      padding: 0.6rem 0;
+      border-top: 1px solid rgba(255,255,255,0.1);
       transition: color 0.2s;
     }
-    nav a:hover { color: #fff; }
+    .nav-links a:hover { color: #fff; }
+    .nav-links .admin-link {
+      font-size: 0.85rem;
+      opacity: 0.6;
+      margin-top: 0.5rem;
+    }
+    
+    /* Main Content - Mobile */
     main {
-      max-width: 960px;
       width: 100%;
-      margin: 2rem auto;
-      padding: 0 1rem;
+      padding: 1.25rem 1rem;
       flex: 1;
     }
+    
+    /* Footer */
     footer {
       text-align: center;
-      padding: 2rem;
+      padding: 1.5rem 1rem;
       color: #888;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       border-top: 1px solid #e0e0e0;
       margin-top: auto;
     }
+    
+    /* Typography - Mobile */
     a { color: #1a1a2e; }
-    h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
-    h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
-    h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.25rem; }
+    h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+    h2 { font-size: 1.35rem; font-weight: 600; margin-bottom: 0.5rem; }
+    h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem; }
+    p { margin-bottom: 1rem; }
+    
+    /* Components - Mobile */
     .card {
       background: #fff;
-      padding: 1.5rem;
+      padding: 1.25rem;
       border-radius: 8px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       margin-bottom: 1rem;
@@ -69,16 +107,17 @@
     pre {
       background: #1a1a2e;
       color: #e0e0e0;
-      padding: 1rem;
+      padding: 0.875rem;
       border-radius: 6px;
       overflow-x: auto;
-      font-size: 0.875rem;
+      font-size: 0.8rem;
       line-height: 1.5;
       margin: 1rem 0;
+      -webkit-overflow-scrolling: touch;
     }
     code {
       font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-      font-size: 0.875em;
+      font-size: 0.85em;
     }
     :not(pre) > code {
       background: #f0f0f0;
@@ -89,23 +128,73 @@
       width: 100%;
       border-collapse: collapse;
       margin: 1rem 0;
+      font-size: 0.9rem;
     }
     th, td {
       text-align: left;
-      padding: 0.5rem 0.75rem;
+      padding: 0.5rem 0.5rem;
       border-bottom: 1px solid #eee;
     }
     th { font-weight: 600; background: #fafafa; }
+    
+    /* Grid - Mobile */
+    .grid { display: flex; flex-direction: column; gap: 1rem; }
+    
+    /* ========== Tablet+ (min-width: 640px) ========== */
+    @media (min-width: 640px) {
+      nav { padding: 0.75rem 1.5rem; }
+      .nav-toggle { display: none; }
+      .nav-links {
+        display: flex;
+        flex-direction: row;
+        gap: 1.25rem;
+        padding-top: 0;
+        align-items: center;
+      }
+      .nav-links a {
+        padding: 0;
+        border-top: none;
+      }
+      .nav-links .admin-link { margin-top: 0; margin-left: auto; }
+      
+      main { padding: 1.5rem; }
+      h1 { font-size: 2rem; }
+      h2 { font-size: 1.5rem; }
+      
+      .grid { flex-direction: row; flex-wrap: wrap; }
+      .grid > * { flex: 1 1 calc(50% - 0.5rem); min-width: 280px; }
+    }
+    
+    /* ========== Desktop (min-width: 960px) ========== */
+    @media (min-width: 960px) {
+      nav { padding: 0.75rem 2rem; }
+      main {
+        max-width: 960px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      footer { padding: 2rem; font-size: 0.85rem; }
+      pre { padding: 1rem; font-size: 0.875rem; }
+      .card { padding: 1.5rem; }
+      
+      .grid > * { flex: 1 1 calc(33.333% - 0.75rem); }
+    }
   </style>
 </head>
 <body>
   <nav>
-    <span class="brand">Hypermedia CMS</span>
-    <a href="/" hx-get="/" hx-target="main" hx-push-url="true">Home</a>
-    <a href="/articles" hx-get="/articles" hx-target="main" hx-push-url="true">Articles</a>
-    <a href="/docs" hx-get="/docs" hx-target="main" hx-push-url="true">Docs</a>
-    <a href="/about" hx-get="/about" hx-target="main" hx-push-url="true">About</a>
-    <a href="/admin" style="margin-left: auto; font-size: 0.8rem; opacity: 0.6;">Admin</a>
+    <div class="nav-header">
+      <a href="/" class="brand">Hypermedia CMS</a>
+      <button class="nav-toggle" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Toggle navigation">☰</button>
+    </div>
+    <div class="nav-links">
+      <a href="/" hx-get="/" hx-target="main" hx-push-url="true">Home</a>
+      <a href="/articles" hx-get="/articles" hx-target="main" hx-push-url="true">Articles</a>
+      <a href="/recipes" hx-get="/recipes" hx-target="main" hx-push-url="true">Recipes</a>
+      <a href="/docs" hx-get="/docs" hx-target="main" hx-push-url="true">Docs</a>
+      <a href="/about" hx-get="/about" hx-target="main" hx-push-url="true">About</a>
+      <a href="/admin" class="admin-link">Admin</a>
+    </div>
   </nav>
   <main>__content__</main>
   <footer>&copy; 2026 Hypermedia CMS &mdash; Powered by Origen + Rufinus</footer>

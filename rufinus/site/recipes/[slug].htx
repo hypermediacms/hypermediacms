@@ -1,0 +1,159 @@
+<htx:type>recipe</htx:type>
+<htx:slug>__slug__</htx:slug>
+
+<htx>
+  <article class="recipe-detail">
+    <header>
+      <h1>__title__</h1>
+      <div class="recipe-meta">
+        {{ if prep_time }}
+          <span>🕐 Prep: __prep_time__ min</span>
+        {{ endif }}
+        {{ if cook_time }}
+          <span>🔥 Cook: __cook_time__ min</span>
+        {{ endif }}
+        {{ if servings }}
+          <span>🍽️ Serves: __servings__</span>
+        {{ endif }}
+      </div>
+    </header>
+    
+    <div class="recipe-intro card">
+      __body__
+    </div>
+    
+    <div class="recipe-content">
+      <section class="ingredients-section">
+        <h2>Ingredients</h2>
+        <ul class="ingredients-list">
+          <htx:nest name="ingredients">
+            <li>
+              <span class="amount">__amount__</span>
+              <span class="unit">__unit__</span>
+              <span class="item">__item__</span>
+            </li>
+          </htx:nest>
+        </ul>
+      </section>
+      
+      <section class="steps-section">
+        <h2>Instructions</h2>
+        <ol class="steps-list">
+          <htx:nest name="steps">
+            <li>
+              <p class="instruction">__instruction__</p>
+              {{ if tip }}
+                <p class="tip">💡 __tip__</p>
+              {{ endif }}
+            </li>
+          </htx:nest>
+        </ol>
+      </section>
+    </div>
+    
+    <footer class="recipe-footer">
+      <a href="/recipes" hx-get="/recipes" hx-target="main" hx-push-url="true">← Back to Recipes</a>
+    </footer>
+  </article>
+  
+  <htx:none>
+    <div class="card">
+      <h1>Recipe Not Found</h1>
+      <p>Sorry, we couldn't find that recipe.</p>
+      <a href="/recipes" hx-get="/recipes" hx-target="main" hx-push-url="true">← Back to Recipes</a>
+    </div>
+  </htx:none>
+</htx>
+
+<style>
+  .recipe-detail header { margin-bottom: 1.5rem; }
+  .recipe-detail h1 { margin-bottom: 0.5rem; }
+  .recipe-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: #666;
+  }
+  .recipe-intro { margin-bottom: 2rem; }
+  
+  .recipe-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  /* Ingredients */
+  .ingredients-section h2 { margin-bottom: 1rem; }
+  .ingredients-list {
+    list-style: none;
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .ingredients-list li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .ingredients-list li:last-child { border-bottom: none; }
+  .ingredients-list .amount { font-weight: 600; }
+  .ingredients-list .unit { color: #666; margin-right: 0.25rem; }
+  
+  /* Steps */
+  .steps-section h2 { margin-bottom: 1rem; }
+  .steps-list {
+    list-style: none;
+    counter-reset: step;
+  }
+  .steps-list li {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    position: relative;
+    padding-left: 3.5rem;
+  }
+  .steps-list li::before {
+    counter-increment: step;
+    content: counter(step);
+    position: absolute;
+    left: 1rem;
+    top: 1.25rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    background: #1a1a2e;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+  .steps-list .instruction { margin: 0; }
+  .steps-list .tip {
+    margin: 0.75rem 0 0 0;
+    font-size: 0.9rem;
+    color: #666;
+    background: #f8f8f8;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+  }
+  
+  .recipe-footer {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+  }
+  .recipe-footer a { text-decoration: none; }
+  .recipe-footer a:hover { text-decoration: underline; }
+  
+  /* Tablet+ */
+  @media (min-width: 640px) {
+    .recipe-content { flex-direction: row; }
+    .ingredients-section { flex: 0 0 280px; }
+    .steps-section { flex: 1; }
+  }
+</style>

@@ -63,10 +63,10 @@ class IndexRebuildCommand implements CommandInterface
             $fields = [];
             foreach ($schema['fields'] ?? [] as $field) {
                 $fields[] = [
-                    'field_name' => $field['name'],
-                    'field_type' => $field['type'],
+                    'field_name' => $field['field_name'] ?? $field['name'] ?? '',
+                    'field_type' => $field['field_type'] ?? $field['type'] ?? 'text',
                     'constraints' => $field['constraints'] ?? [],
-                    'ui_hints' => [],
+                    'ui_hints' => $field['ui_hints'] ?? [],
                 ];
             }
 
