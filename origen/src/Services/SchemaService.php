@@ -272,7 +272,17 @@ class SchemaService
      */
     public function saveTypeSchema(array $site, string $contentType, array $fields): void
     {
-        $this->schemaRepo->replaceForType((int) $site['id'], $contentType, $fields);
+        // Normalize keys: YAML may use name/type or field_name/field_type
+        $normalized = array_map(function ($field) {
+            return [
+                'field_name' => $field['field_name'] ?? $field['name'] ?? '',
+                'field_type' => $field['field_type'] ?? $field['type'] ?? 'text',
+                'constraints' => $field['constraints'] ?? [],
+                'ui_hints' => $field['ui_hints'] ?? [],
+            ];
+        }, $fields);
+
+        $this->schemaRepo->replaceForType((int) $site['id'], $contentType, $normalized);
     }
 
     /**
