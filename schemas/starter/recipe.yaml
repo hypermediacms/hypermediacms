@@ -1,0 +1,45 @@
+fields:
+  - field_name: prep_time
+    field_type: number
+    ui_hints:
+      label: "Prep Time (minutes)"
+  
+  - field_name: cook_time
+    field_type: number
+    ui_hints:
+      label: "Cook Time (minutes)"
+  
+  - field_name: servings
+    field_type: number
+    ui_hints:
+      label: "Servings"
+  
+  - field_name: ingredients
+    field_type: object
+    constraints:
+      cardinality: many
+      schema:
+        - field_name: amount
+          field_type: text
+        - field_name: unit
+          field_type: text
+        - field_name: item
+          field_type: text
+          constraints:
+            required: true
+    ui_hints:
+      label: "Ingredients"
+  
+  - field_name: steps
+    field_type: object
+    constraints:
+      cardinality: many
+      schema:
+        - field_name: instruction
+          field_type: textarea
+          constraints:
+            required: true
+        - field_name: tip
+          field_type: text
+    ui_hints:
+      label: "Instructions"

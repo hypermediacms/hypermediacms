@@ -190,6 +190,20 @@ class ContentController
                 }
             }
 
+            // Parse object fields from JSON to arrays
+            $schema = $this->schemaService->getSchemaForType($site, $row['type']);
+            foreach ($schema as $fieldDef) {
+                if ($fieldDef['field_type'] === 'object' && isset($responseRow[$fieldDef['field_name']])) {
+                    $stored = $responseRow[$fieldDef['field_name']];
+                    if (is_string($stored)) {
+                        $decoded = json_decode($stored, true);
+                        if (is_array($decoded)) {
+                            $responseRow[$fieldDef['field_name']] = $decoded;
+                        }
+                    }
+                }
+            }
+
             // Overlay resolved relationships
             if (isset($resolved[$row['id']])) {
                 foreach ($resolved[$row['id']] as $fieldName => $resolvedData) {

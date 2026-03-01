@@ -48,6 +48,149 @@ class SchemaService
     }
 
     /**
+     * Validate object field constraints at schema-definition time.
+     *
+     * @param array $field The field definition
+     * @param int $depth Current nesting depth (for recursion limit)
+     * @return array Validation errors
+     */
+    public function validateObjectConstraints(array $field, int $depth = 0): array
+    {
+        $errors = [];
+        $constraints = $field['constraints'] ?? [];
+        $maxDepth = 5;
+
+        if ($depth > $maxDepth) {
+            $errors[] = "Object nesting exceeds maximum depth of {$maxDepth}.";
+            return $errors;
+        }
+
+        if (!isset($constraints['schema']) || !is_array($constraints['schema'])) {
+            $errors[] = 'Object fields require a "schema" array defining nested fields.';
+        }
+
+        if (!isset($constraints['cardinality']) || !in_array($constraints['cardinality'], ['one', 'many'], true)) {
+            $errors[] = 'Object fields require cardinality of "one" or "many".';
+        }
+
+        // Validate each nested field
+        foreach ($constraints['schema'] ?? [] as $i => $nestedField) {
+            if (empty($nestedField['field_name'])) {
+                $errors[] = "Nested field at index {$i} requires field_name.";
+                continue;
+            }
+            if (empty($nestedField['field_type'])) {
+                $errors[] = "Nested field '{$nestedField['field_name']}' requires field_type.";
+                continue;
+            }
+
+            // Recurse for nested objects
+            if ($nestedField['field_type'] === 'object') {
+                $nestedErrors = $this->validateObjectConstraints($nestedField, $depth + 1);
+                foreach ($nestedErrors as $err) {
+                    $errors[] = "{$nestedField['field_name']}: {$err}";
+                }
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Validate a value against an object field's nested schema.
+     *
+     * @param array $field The field definition with constraints.schema
+     * @param mixed $value The value to validate
+     * @return array Validation errors
+     */
+    public function validateObjectValue(array $field, $value): array
+    {
+        $errors = [];
+        $constraints = $field['constraints'] ?? [];
+        $cardinality = $constraints['cardinality'] ?? 'one';
+        $schema = $constraints['schema'] ?? [];
+
+        if ($value === null || $value === '' || $value === []) {
+            // Empty is allowed unless required
+            if (!empty($constraints['required'])) {
+                $errors[] = 'This field is required.';
+            }
+            return $errors;
+        }
+
+        if ($cardinality === 'one') {
+            if (!is_array($value) || $this->isSequentialArray($value)) {
+                $errors[] = 'Expected a single object, not an array.';
+                return $errors;
+            }
+            $errors = array_merge($errors, $this->validateObjectItem($schema, $value, ''));
+        } else {
+            if (!is_array($value) || !$this->isSequentialArray($value)) {
+                $errors[] = 'Expected an array of objects.';
+                return $errors;
+            }
+            foreach ($value as $i => $item) {
+                $itemErrors = $this->validateObjectItem($schema, $item, "[{$i}]");
+                $errors = array_merge($errors, $itemErrors);
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Check if an array is sequential (0-indexed numeric keys).
+     */
+    private function isSequentialArray(array $arr): bool
+    {
+        if (empty($arr)) {
+            return true;
+        }
+        return array_keys($arr) === range(0, count($arr) - 1);
+    }
+
+    /**
+     * Validate a single object item against a nested schema.
+     */
+    private function validateObjectItem(array $schema, $item, string $prefix): array
+    {
+        $errors = [];
+
+        if (!is_array($item)) {
+            $errors[] = "{$prefix} must be an object.";
+            return $errors;
+        }
+
+        foreach ($schema as $fieldDef) {
+            $name = $fieldDef['field_name'];
+            $type = $fieldDef['field_type'];
+            $fieldConstraints = $fieldDef['constraints'] ?? [];
+            $value = $item[$name] ?? null;
+            $path = $prefix ? "{$prefix}.{$name}" : $name;
+
+            // Required check
+            if (!empty($fieldConstraints['required']) && ($value === null || $value === '')) {
+                $errors[] = "{$path} is required.";
+            }
+
+            // Type-specific validation
+            if ($value !== null && $value !== '') {
+                if ($type === 'number' && !is_numeric($value)) {
+                    $errors[] = "{$path} must be a number.";
+                }
+                if ($type === 'object') {
+                    $nestedErrors = $this->validateObjectValue($fieldDef, $value);
+                    foreach ($nestedErrors as $err) {
+                        $errors[] = "{$path}: {$err}";
+                    }
+                }
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
      * Validate field values against the schema constraints.
      */
     public function validateFieldValues(array $site, string $contentType, array $values): array
@@ -142,12 +285,28 @@ class SchemaService
 
     /**
      * Sync (upsert) content field values.
+     *
+     * Handles relationship fields (array of IDs) and object fields (nested JSON).
      */
-    public function syncFieldValues(int $contentId, int $siteId, array $values): void
+    public function syncFieldValues(int $contentId, int $siteId, array $values, array $schemas = []): void
     {
+        // Build lookup of field types
+        $fieldTypes = [];
+        foreach ($schemas as $schema) {
+            $fieldTypes[$schema['field_name']] = $schema['field_type'];
+        }
+
         foreach ($values as $fieldName => $fieldValue) {
             if (is_array($fieldValue)) {
-                $fieldValue = json_encode(array_values(array_filter(array_map('intval', $fieldValue))));
+                $fieldType = $fieldTypes[$fieldName] ?? null;
+
+                if ($fieldType === 'object') {
+                    // Object fields: encode as-is (preserve nested structure)
+                    $fieldValue = json_encode($fieldValue, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                } else {
+                    // Relationship fields: array of integer IDs
+                    $fieldValue = json_encode(array_values(array_filter(array_map('intval', $fieldValue))));
+                }
             }
 
             $this->contentRepo->upsertFieldValue($contentId, $siteId, $fieldName, $fieldValue);

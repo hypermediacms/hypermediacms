@@ -107,6 +107,7 @@ class GetContentExecutor
                     ? $this->expressionEngine->evaluate($itemTemplate, $row)
                     : $itemTemplate;
                 $evaluated = $this->processRelBlocks($evaluated, $row);
+                $evaluated = $this->processNestBlocks($evaluated, $row);
                 $itemsHtml .= $this->hydrator->hydrate($evaluated, $row);
             }
 
@@ -122,10 +123,86 @@ class GetContentExecutor
                 $template = $this->expressionEngine->evaluate($template, $data);
             }
             $template = $this->processRelBlocks($template, $data);
+            $template = $this->processNestBlocks($template, $data);
             $template = $this->hydrator->hydrate($template, $data);
         }
 
         return $template;
+    }
+
+    /**
+     * Process <htx:nest name="fieldName"> blocks for embedded object rendering.
+     *
+     * For cardinality=many: iterates over array, renders inner template for each item.
+     * For cardinality=one: renders once with the single object's context.
+     * Supports nested nests via recursion.
+     */
+    private function processNestBlocks(string $template, array $data): string
+    {
+        return preg_replace_callback(
+            '/<htx:nest\s+name="([^"]+)">(.*?)<\/htx:nest>/s',
+            function ($matches) use ($data) {
+                $fieldName = $matches[1];
+                $innerTemplate = $matches[2];
+
+                // Get the nested data
+                $nested = $data[$fieldName] ?? null;
+
+                // Handle string (stored JSON that wasn't decoded upstream)
+                if (is_string($nested)) {
+                    $nested = json_decode($nested, true);
+                }
+
+                if (empty($nested) || !is_array($nested)) {
+                    return '';
+                }
+
+                // Detect cardinality: if it has sequential numeric keys, it's many
+                // If it has string keys (like 'src', 'alt'), it's one
+                $isMany = array_keys($nested) === range(0, count($nested) - 1);
+
+                if (!$isMany) {
+                    // Cardinality=one: wrap single object for uniform iteration
+                    $nested = [$nested];
+                }
+
+                $output = '';
+                $total = count($nested);
+                $hasExpressions = $this->expressionEngine->hasExpressions($innerTemplate);
+
+                foreach ($nested as $i => $item) {
+                    if (!is_array($item)) {
+                        continue;
+                    }
+
+                    // Inject loop metadata
+                    $item['loop'] = [
+                        'index' => $i,
+                        'count' => $i + 1,
+                        'first' => $i === 0,
+                        'last' => $i === $total - 1,
+                        'length' => $total,
+                    ];
+
+                    // Inject parent reference for bubbling access
+                    $item['$parent'] = $data;
+
+                    // Expression evaluation ({{ if }}, {{ each }}, functions)
+                    $evaluated = $hasExpressions
+                        ? $this->expressionEngine->evaluate($innerTemplate, $item)
+                        : $innerTemplate;
+
+                    // Recurse for nested <htx:nest> blocks
+                    $evaluated = $this->processNestBlocks($evaluated, $item);
+
+                    // Placeholder hydration (__field__)
+                    $output .= $this->hydrator->hydrate($evaluated, $item);
+                }
+
+                return $output;
+            },
+            $template
+        );
     }
 
     /**

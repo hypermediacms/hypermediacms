@@ -107,7 +107,8 @@ class ContentService
 
         // Sync custom field values to SQLite
         if (!empty($customFields)) {
-            $this->schemaService->syncFieldValues($record['id'], $siteId, $customFields);
+            $schemas = $this->schemaService->getSchemaForType($site, $contentData['type']);
+            $this->schemaService->syncFieldValues($record['id'], $siteId, $customFields, $schemas);
         }
 
         return $record;
@@ -136,7 +137,8 @@ class ContentService
         $reserved = ['type', 'slug', 'title', 'body', 'status', 'responseTemplates', 'htx-token', 'htx-context', 'htx-recordId'];
         $customFields = array_diff_key($data, array_flip($reserved));
         if (!empty($customFields)) {
-            $this->schemaService->syncFieldValues($record['id'], $siteId, $customFields);
+            $schemas = $this->schemaService->getSchemaForType($site, $existing['type']);
+            $this->schemaService->syncFieldValues($record['id'], $siteId, $customFields, $schemas);
             // Re-write the flat file with updated field values
             $this->writeThrough->updateContent($siteSlug, $siteId, $record, [], $storageMode);
         }

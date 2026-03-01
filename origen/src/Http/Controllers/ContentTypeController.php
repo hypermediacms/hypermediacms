@@ -155,6 +155,20 @@ class ContentTypeController
                     }
                 }
 
+                if ($field['field_type'] === 'object') {
+                    $constraints['cardinality'] = $field['cardinality'] ?? 'many';
+                    $constraints['schema'] = $field['schema'] ?? [];
+
+                    $objErrors = $this->schemaService->validateObjectConstraints([
+                        'constraints' => $constraints,
+                    ]);
+                    if (!empty($objErrors)) {
+                        return Response::json([
+                            'message' => 'Invalid object field "' . $fieldName . '": ' . implode(' ', $objErrors),
+                        ], 422);
+                    }
+                }
+
                 $validFields[] = [
                     'field_name' => trim($fieldName, '_'),
                     'field_type' => $field['field_type'],
