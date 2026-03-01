@@ -103,11 +103,13 @@ class GetContentExecutor
             $hasExpressions = $this->expressionEngine->hasExpressions($itemTemplate);
 
             foreach ($rows as $row) {
-                $evaluated = $hasExpressions
-                    ? $this->expressionEngine->evaluate($itemTemplate, $row)
-                    : $itemTemplate;
+                // Process nest blocks FIRST (they have their own expression context)
+                $evaluated = $this->processNestBlocks($itemTemplate, $row);
                 $evaluated = $this->processRelBlocks($evaluated, $row);
-                $evaluated = $this->processNestBlocks($evaluated, $row);
+                // Then evaluate remaining expressions with row data
+                $evaluated = $hasExpressions
+                    ? $this->expressionEngine->evaluate($evaluated, $row)
+                    : $evaluated;
                 $itemsHtml .= $this->hydrator->hydrate($evaluated, $row);
             }
 
@@ -119,11 +121,13 @@ class GetContentExecutor
         } else {
             // Single item template - use first row
             $data = $rows[0] ?? [];
+            // Process nest blocks FIRST (they have their own expression context)
+            $template = $this->processNestBlocks($template, $data);
+            $template = $this->processRelBlocks($template, $data);
+            // Then evaluate remaining expressions with parent data
             if ($this->expressionEngine->hasExpressions($template)) {
                 $template = $this->expressionEngine->evaluate($template, $data);
             }
-            $template = $this->processRelBlocks($template, $data);
-            $template = $this->processNestBlocks($template, $data);
             $template = $this->hydrator->hydrate($template, $data);
         }
 
@@ -139,70 +143,127 @@ class GetContentExecutor
      */
     private function processNestBlocks(string $template, array $data): string
     {
-        return preg_replace_callback(
-            '/<htx:nest\s+name="([^"]+)">(.*?)<\/htx:nest>/s',
-            function ($matches) use ($data) {
-                $fieldName = $matches[1];
-                $innerTemplate = $matches[2];
+        // Find outermost htx:nest tags with proper nesting support
+        while (($nestInfo = $this->findOutermostNest($template)) !== null) {
+            $fullMatch = $nestInfo['match'];
+            $fieldName = $nestInfo['name'];
+            $innerTemplate = $nestInfo['content'];
 
-                // Get the nested data
-                $nested = $data[$fieldName] ?? null;
+            // Get the nested data
+            $nested = $data[$fieldName] ?? null;
 
-                // Handle string (stored JSON that wasn't decoded upstream)
-                if (is_string($nested)) {
-                    $nested = json_decode($nested, true);
+            // Handle string (stored JSON that wasn't decoded upstream)
+            if (is_string($nested)) {
+                $nested = json_decode($nested, true);
+            }
+
+            if (empty($nested) || !is_array($nested)) {
+                $template = str_replace($fullMatch, '', $template);
+                continue;
+            }
+
+            // Detect cardinality: if it has sequential numeric keys, it's many
+            // If it has string keys (like 'src', 'alt'), it's one
+            $isMany = array_keys($nested) === range(0, count($nested) - 1);
+
+            if (!$isMany) {
+                // Cardinality=one: wrap single object for uniform iteration
+                $nested = [$nested];
+            }
+
+            $output = '';
+            $total = count($nested);
+            $hasExpressions = $this->expressionEngine->hasExpressions($innerTemplate);
+
+            foreach ($nested as $i => $item) {
+                if (!is_array($item)) {
+                    continue;
                 }
 
-                if (empty($nested) || !is_array($nested)) {
-                    return '';
-                }
+                // Inject loop metadata
+                $item['loop'] = [
+                    'index' => $i,
+                    'count' => $i + 1,
+                    'first' => $i === 0,
+                    'last' => $i === $total - 1,
+                    'length' => $total,
+                ];
 
-                // Detect cardinality: if it has sequential numeric keys, it's many
-                // If it has string keys (like 'src', 'alt'), it's one
-                $isMany = array_keys($nested) === range(0, count($nested) - 1);
+                // Inject parent reference for bubbling access
+                $item['$parent'] = $data;
 
-                if (!$isMany) {
-                    // Cardinality=one: wrap single object for uniform iteration
-                    $nested = [$nested];
-                }
+                // Recurse for nested <htx:nest> blocks FIRST
+                // (they have their own expression context)
+                $evaluated = $this->processNestBlocks($innerTemplate, $item);
 
-                $output = '';
-                $total = count($nested);
-                $hasExpressions = $this->expressionEngine->hasExpressions($innerTemplate);
+                // Then evaluate expressions with current item context
+                $evaluated = $hasExpressions
+                    ? $this->expressionEngine->evaluate($evaluated, $item)
+                    : $evaluated;
 
-                foreach ($nested as $i => $item) {
-                    if (!is_array($item)) {
-                        continue;
-                    }
+                // Placeholder hydration (__field__)
+                $output .= $this->hydrator->hydrate($evaluated, $item);
+            }
 
-                    // Inject loop metadata
-                    $item['loop'] = [
-                        'index' => $i,
-                        'count' => $i + 1,
-                        'first' => $i === 0,
-                        'last' => $i === $total - 1,
-                        'length' => $total,
+            $template = str_replace($fullMatch, $output, $template);
+        }
+
+        return $template;
+    }
+
+    /**
+     * Find the first outermost <htx:nest> tag with proper nesting support.
+     *
+     * @return array|null ['match' => full tag, 'name' => field name, 'content' => inner content]
+     */
+    private function findOutermostNest(string $template): ?array
+    {
+        // Find opening tag
+        if (!preg_match('/<htx:nest\s+name="([^"]+)">/', $template, $openMatch, PREG_OFFSET_CAPTURE)) {
+            return null;
+        }
+
+        $fieldName = $openMatch[1][0];
+        $startPos = $openMatch[0][1];
+        $openTagEnd = $startPos + strlen($openMatch[0][0]);
+
+        // Now find the matching closing tag, respecting nesting
+        $depth = 1;
+        $pos = $openTagEnd;
+        $len = strlen($template);
+
+        while ($pos < $len && $depth > 0) {
+            // Find next opening or closing tag
+            $nextOpen = strpos($template, '<htx:nest ', $pos);
+            $nextClose = strpos($template, '</htx:nest>', $pos);
+
+            if ($nextClose === false) {
+                // No closing tag found - malformed template
+                return null;
+            }
+
+            if ($nextOpen !== false && $nextOpen < $nextClose) {
+                // Found another opening tag first
+                $depth++;
+                $pos = $nextOpen + 10; // Skip past '<htx:nest '
+            } else {
+                // Found closing tag
+                $depth--;
+                if ($depth === 0) {
+                    // This is our matching close
+                    $innerContent = substr($template, $openTagEnd, $nextClose - $openTagEnd);
+                    $fullMatch = substr($template, $startPos, $nextClose + 11 - $startPos); // 11 = strlen('</htx:nest>')
+                    return [
+                        'match' => $fullMatch,
+                        'name' => $fieldName,
+                        'content' => $innerContent,
                     ];
-
-                    // Inject parent reference for bubbling access
-                    $item['$parent'] = $data;
-
-                    // Expression evaluation ({{ if }}, {{ each }}, functions)
-                    $evaluated = $hasExpressions
-                        ? $this->expressionEngine->evaluate($innerTemplate, $item)
-                        : $innerTemplate;
-
-                    // Recurse for nested <htx:nest> blocks
-                    $evaluated = $this->processNestBlocks($evaluated, $item);
-
-                    // Placeholder hydration (__field__)
-                    $output .= $this->hydrator->hydrate($evaluated, $item);
                 }
+                $pos = $nextClose + 11;
+            }
+        }
 
-                return $output;
-            },
-            $template
-        );
+        return null;
     }
 
     /**
